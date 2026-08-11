@@ -5,6 +5,7 @@ import { CartProvider } from "@/components/site/cart-context";
 import { SiteShell } from "@/components/site/site-shell";
 import { locales } from "@/i18n/config";
 import { getCurrentUser } from "@/server/auth/current-user";
+import { getPublicConfig } from "@/server/services/catalog";
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
@@ -14,12 +15,20 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const { locale } = await params;
   if (!locales.includes(locale as "de" | "en")) notFound();
   
-  const currentUser = await getCurrentUser();
+  const [currentUser, publicConfig] = await Promise.all([getCurrentUser(), getPublicConfig()]);
   const user = currentUser ? { name: currentUser.name, email: currentUser.email, image: currentUser.image, role: currentUser.role } : null;
 
   return (
     <CartProvider>
-      <SiteShell locale={locale as "de" | "en"} user={user}>
+      <SiteShell
+        locale={locale as "de" | "en"}
+        user={user}
+        publicConfig={{
+          announcement: publicConfig.announcement,
+          facebookUrl: publicConfig.brand.facebookUrl,
+          instagramUrl: publicConfig.brand.instagramUrl,
+        }}
+      >
         {children}
       </SiteShell>
     </CartProvider>

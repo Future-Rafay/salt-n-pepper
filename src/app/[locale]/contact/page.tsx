@@ -1,9 +1,11 @@
-import { ArrowUpRight, Clock3, Mail, MapPin, Phone } from "lucide-react";
+import { ArrowUpRight, Clock3, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 
 import { ContactForm } from "@/components/site/contact-form";
+import { SocialLinks } from "@/components/site/social-links";
 import { Card } from "@/components/ui/card";
 import { restaurantContent } from "@/content/restaurant";
 import { localizedMetadata } from "@/lib/metadata";
+import { groupOpeningHours } from "@/lib/opening-hours";
 import { getPublicConfig } from "@/server/services/catalog";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -13,7 +15,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function ContactPage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = (await params).locale === "en" ? "en" : "de";
   const de = locale === "de";
-  const { hours } = await getPublicConfig();
+  const { brand, hours } = await getPublicConfig();
+  const groupedHours = groupOpeningHours(hours, locale);
+  const whatsappUrl = `https://wa.me/${restaurantContent.phone.replace(/\D/g, "")}`;
+  const mapEmbedUrl = `https://www.google.com/maps?q=${encodeURIComponent(`${restaurantContent.address.street}, ${restaurantContent.address.postalCode} ${restaurantContent.address.city}`)}&output=embed`;
 
   return (
     <div className="pb-20 sm:pb-28">
@@ -42,11 +47,38 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
         </a>
       </section>
 
+      <section className="mx-auto max-w-7xl px-5 pt-8 sm:px-8">
+        <Card className="flex flex-col gap-5 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div>
+            <div className="flex items-center gap-2 text-secondary">
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+              <h2 className="font-display text-2xl text-primary">{de ? "Direkt verbunden" : "Stay connected"}</h2>
+            </div>
+            <p className="mt-2 text-sm leading-6 text-muted">{de ? "Schreiben Sie uns auf WhatsApp oder besuchen Sie unsere Social-Media-Kanäle." : "Message us on WhatsApp or visit our social channels."}</p>
+          </div>
+          <SocialLinks facebookUrl={brand.facebookUrl} instagramUrl={brand.instagramUrl} whatsappUrl={whatsappUrl} locale={locale} />
+        </Card>
+      </section>
+
       <section className="mx-auto grid max-w-7xl gap-8 px-5 pt-16 sm:px-8 sm:pt-24 lg:grid-cols-[0.7fr_1.3fr]">
         <Card className="h-fit p-7 sm:p-8">
           <Clock3 className="h-7 w-7 text-secondary" aria-hidden="true" />
           <h2 className="mt-5 font-display text-2xl text-primary">{de ? "Öffnungszeiten" : "Opening hours"}</h2>
-          <p className="mt-4 text-sm leading-6 text-muted">{hours.length > 0 ? (de ? "Die bestätigten Servicezeiten werden vom Restaurant verwaltet und beim Bestellen angezeigt." : "Confirmed service hours are managed by the restaurant and shown during ordering.") : (de ? "Die bestätigten Öffnungszeiten werden hier veröffentlicht, sobald sie vorliegen." : "Confirmed opening hours will be published here as soon as they are available.")}</p>
+          <div className="mt-6 space-y-7">
+            {groupedHours.map((group) => (
+              <section key={group.fulfillmentType} aria-labelledby={`hours-${group.fulfillmentType.toLowerCase()}`}>
+                <h3 id={`hours-${group.fulfillmentType.toLowerCase()}`} className="text-xs font-bold uppercase tracking-[0.16em] text-secondary">{group.label}</h3>
+                <dl className="mt-3 space-y-2 text-sm">
+                  {group.days.map((day) => (
+                    <div key={day.weekday} className="flex items-center justify-between gap-4 border-b border-border/70 pb-2 last:border-0">
+                      <dt className="text-muted">{day.label}</dt>
+                      <dd className="font-bold tabular-nums text-primary">{day.value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
+            ))}
+          </div>
         </Card>
         <Card className="p-7 sm:p-10" aria-labelledby="contact-form-heading">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">{de ? "Nachricht senden" : "Send a message"}</p>
@@ -54,6 +86,26 @@ export default async function ContactPage({ params }: { params: Promise<{ locale
           <p className="mb-7 mt-3 text-sm leading-6 text-muted">{de ? "Wir antworten so bald wie möglich per E-Mail." : "We will reply by email as soon as possible."}</p>
           <ContactForm locale={locale} />
         </Card>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-5 pt-16 sm:px-8 sm:pt-24" aria-labelledby="map-heading">
+        <div className="mb-7 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">{de ? "Anfahrt" : "Directions"}</p>
+            <h2 id="map-heading" className="mt-3 font-display text-4xl tracking-[-0.04em] text-primary">{de ? "Finden Sie uns in Oberglatt." : "Find us in Oberglatt."}</h2>
+          </div>
+          <a href={restaurantContent.mapUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-2 font-bold text-primary hover:text-secondary">{de ? "In Google Maps öffnen" : "Open in Google Maps"}<ArrowUpRight className="h-5 w-5" aria-hidden="true" /></a>
+        </div>
+        <div className="overflow-hidden rounded-card border border-border bg-surface shadow-sm">
+          <iframe
+            title={de ? "Google-Karte mit dem Standort von SaltNPepper" : "Google map showing the SaltNPepper location"}
+            src={mapEmbedUrl}
+            className="h-[420px] w-full border-0 sm:h-[520px]"
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            allowFullScreen
+          />
+        </div>
       </section>
     </div>
   );

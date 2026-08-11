@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, Globe2, LogOut, Mail, MapPin, Menu, Phone, Settings, ShoppingBag, User, X } from "lucide-react";
+import { ChevronRight, Globe2, LogOut, Mail, MapPin, Megaphone, Menu, MessageCircle, Phone, Settings, ShoppingBag, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
@@ -9,13 +9,19 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { BrandLogo } from "@/components/brand-logo";
 import { CustomerNotifications } from "@/components/site/customer-notifications";
+import { SocialLinks } from "@/components/site/social-links";
 import { useCart } from "@/components/site/cart-context";
 import { restaurantContent } from "@/content/restaurant";
 import { formatChf } from "@/lib/orders";
 
 type SiteUser = { name?: string | null; email?: string | null; image?: string | null; role?: string } | null;
+type PublicShellConfig = {
+  announcement: { de: string | null; en: string | null } | null;
+  facebookUrl?: string | null;
+  instagramUrl?: string | null;
+};
 
-export function SiteShell({ locale, user, children }: { locale: "de" | "en"; user?: SiteUser; children: ReactNode }) {
+export function SiteShell({ locale, user, publicConfig, children }: { locale: "de" | "en"; user?: SiteUser; publicConfig: PublicShellConfig; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -25,12 +31,15 @@ export function SiteShell({ locale, user, children }: { locale: "de" | "en"; use
   const other = locale === "de" ? "en" : "de";
   const cartTotalRappen = items.reduce((sum, item) => sum + item.unitPriceRappen * item.quantity, 0);
   const de = locale === "de";
+  const announcement = publicConfig.announcement?.[locale];
+  const whatsappUrl = `https://wa.me/${restaurantContent.phone.replace(/\D/g, "")}`;
   const labels = de
-    ? { home: "Start", menu: "Menü", about: "Über uns", contact: "Kontakt", account: "Meine Bestellungen", logout: "Abmelden", login: "Anmelden", register: "Registrieren", cart: "Warenkorb", rights: "Alle Rechte vorbehalten.", privacy: "Datenschutz", terms: "AGB", welcome: "Willkommen bei SaltNPepper" }
-    : { home: "Home", menu: "Menu", about: "About", contact: "Contact", account: "My orders", logout: "Sign out", login: "Sign in", register: "Create account", cart: "Cart", rights: "All rights reserved.", privacy: "Privacy", terms: "Terms", welcome: "Welcome to SaltNPepper" };
+    ? { home: "Start", menu: "Menü", blog: "Blog", about: "Über uns", contact: "Kontakt", account: "Meine Bestellungen", logout: "Abmelden", login: "Anmelden", register: "Registrieren", cart: "Warenkorb", rights: "Alle Rechte vorbehalten.", privacy: "Datenschutz", terms: "AGB", welcome: "Willkommen bei SaltNPepper" }
+    : { home: "Home", menu: "Menu", blog: "Blog", about: "About", contact: "Contact", account: "My orders", logout: "Sign out", login: "Sign in", register: "Create account", cart: "Cart", rights: "All rights reserved.", privacy: "Privacy", terms: "Terms", welcome: "Welcome to SaltNPepper" };
   const navLinks = [
     { href: `/${locale}`, label: labels.home },
     { href: `/${locale}/menu`, label: labels.menu },
+    { href: `/${locale}/blog`, label: labels.blog },
     { href: `/${locale}/about`, label: labels.about },
     { href: `/${locale}/contact`, label: labels.contact },
   ];
@@ -67,7 +76,14 @@ export function SiteShell({ locale, user, children }: { locale: "de" | "en"; use
       </a>
 
       <div className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6">
-        <header className="mx-auto max-w-7xl rounded-2xl border border-border/80 bg-surface/95 shadow-[0_10px_35px_rgba(28,25,23,0.12)] backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-2xl border border-border/80 bg-surface/95 shadow-[0_10px_35px_rgba(28,25,23,0.12)] backdrop-blur-xl">
+          {announcement && (
+            <div className="flex min-h-10 items-center justify-center gap-2 bg-secondary px-4 py-2 text-center text-xs font-bold text-white sm:text-sm">
+              <Megaphone className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <p>{announcement}</p>
+            </div>
+          )}
+        <header>
           <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-5">
             <Link href={`/${locale}`} className="flex min-h-11 items-center" aria-label={de ? "SaltNPepper Startseite" : "SaltNPepper home"}>
               <BrandLogo priority className="h-8 w-auto object-contain sm:h-9" />
@@ -141,9 +157,10 @@ export function SiteShell({ locale, user, children }: { locale: "de" | "en"; use
             </nav>
           )}
         </header>
+        </div>
       </div>
 
-      <main id="main-content" tabIndex={-1} className="flex-1 pt-[5.5rem] focus:outline-none">{children}</main>
+      <main id="main-content" tabIndex={-1} className={`flex-1 focus:outline-none ${announcement ? "pt-[8.25rem] sm:pt-[7.75rem]" : "pt-[5.5rem]"}`}>{children}</main>
 
       <footer className="border-t border-border bg-surface">
         <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 sm:py-16">
@@ -163,6 +180,9 @@ export function SiteShell({ locale, user, children }: { locale: "de" | "en"; use
                 <a href={`tel:${restaurantContent.phone.replace(/\s/g, "")}`} className="flex min-h-11 items-center gap-3 hover:text-primary"><Phone className="h-5 w-5 text-secondary" aria-hidden="true" />{restaurantContent.phone}</a>
                 <a href={`mailto:${restaurantContent.email}`} className="flex min-h-11 items-center gap-3 break-all hover:text-primary"><Mail className="h-5 w-5 shrink-0 text-secondary" aria-hidden="true" />{restaurantContent.email}</a>
               </address>
+              <div className="mt-5">
+                <SocialLinks facebookUrl={publicConfig.facebookUrl} instagramUrl={publicConfig.instagramUrl} whatsappUrl={whatsappUrl} locale={locale} />
+              </div>
             </div>
           </div>
           <div className="mt-12 flex flex-col gap-4 border-t border-border pt-7 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
@@ -171,6 +191,16 @@ export function SiteShell({ locale, user, children }: { locale: "de" | "en"; use
           </div>
         </div>
       </footer>
+
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noreferrer"
+        aria-label={de ? "SaltNPepper auf WhatsApp kontaktieren" : "Contact SaltNPepper on WhatsApp"}
+        className={`fixed right-4 z-40 inline-flex min-h-14 min-w-14 items-center justify-center rounded-full bg-[#1f8f4d] text-white shadow-2xl transition-transform hover:scale-105 sm:bottom-6 sm:right-6 ${count > 0 ? "bottom-20" : "bottom-4"}`}
+      >
+        <MessageCircle className="h-6 w-6" aria-hidden="true" />
+      </a>
 
       {count > 0 && (
         <div className="fixed bottom-4 left-1/2 z-40 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 sm:hidden">

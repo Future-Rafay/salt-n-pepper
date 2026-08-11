@@ -1,15 +1,31 @@
 import type { Locale } from "@/generated/prisma/enums";
+import { cache } from "react";
+import { buildDeliveryAnnouncement } from "@/lib/delivery-announcement";
 import { prisma } from "@/server/db";
 import { zurichParts } from "@/lib/zurich-time";
 import { resolvePublicImageUrl } from "@/server/storage/s3";
 import { restaurantContent } from "@/content/restaurant";
 
-export async function getPublicConfig() {
-  const [site, fulfillment, hours] = await Promise.all([
+export const getPublicConfig = cache(async function getPublicConfig() {
+  const [site, fulfillment, hours, deliveryZones] = await Promise.all([
     prisma.siteSettings.findUniqueOrThrow({ where: { id: 1 } }),
     prisma.fulfillmentSettings.findUniqueOrThrow({ where: { id: 1 } }),
     prisma.openingWindow.findMany({ where: { active: true }, orderBy: [{ weekday: "asc" }, { sortOrder: "asc" }] }),
+    prisma.deliveryZone.findMany({
+      where: { active: true },
+      orderBy: { sortOrder: "asc" },
+      include: { postalCodes: { orderBy: { postalCode: "asc" } } },
+    }),
   ]);
+
+  const announcementZone = deliveryZones[0];
+  const announcementInput = announcementZone
+    ? {
+        postalCodes: announcementZone.postalCodes.map(({ postalCode }) => postalCode),
+        minimumSubtotalRappen: announcementZone.minimumSubtotalRappen,
+        freeDeliveryThresholdRappen: announcementZone.freeDeliveryThresholdRappen,
+      }
+    : null;
 
   return {
     locales: ["de", "en"],
@@ -41,9 +57,16 @@ export async function getPublicConfig() {
       asapEnabled: fulfillment.asapEnabled,
       scheduledEnabled: fulfillment.scheduledEnabled,
     },
+    announcement:
+      site.announcementActive && announcementInput
+        ? {
+            de: buildDeliveryAnnouncement(announcementInput, "de"),
+            en: buildDeliveryAnnouncement(announcementInput, "en"),
+          }
+        : null,
     hours,
   };
-}
+});
 
 export async function getPublicMenu(locale: Locale, at = new Date()) {
   const current = zurichParts(at);

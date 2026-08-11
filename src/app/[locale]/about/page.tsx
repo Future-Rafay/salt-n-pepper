@@ -35,7 +35,7 @@ export default async function AboutPage({ params }: { params: Promise<{ locale: 
       <section className="border-y border-border bg-primary py-20 text-white sm:py-24">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">
           <div className="max-w-3xl">
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary-light">{de ? "Unsere Richtung" : "Our direction"}</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary-contrast">{de ? "Unsere Richtung" : "Our direction"}</p>
             <h2 className="mt-4 font-display text-4xl leading-none tracking-[-0.04em] sm:text-6xl">{copy.aboutTitle}</h2>
           </div>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
