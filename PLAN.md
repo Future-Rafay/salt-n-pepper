@@ -17,11 +17,15 @@
 3. Rebranded the admin shell, staff emails, order labels, auth, and shared settings without changing proven authorization, ordering, payment, or refund rules.
 4. Rebranded the React Native staff app, receipt header, native application identity, storage keys, and production API URL.
 5. Replaced the inherited migration history with a clean Prisma baseline for the new `saltnpepper_dev` schema.
+6. Added a provisional bilingual Pakistani grill catalog, daily service hours, the 8154 delivery offer, and licensed representative product photography stored under the public `SaltNPepper/` S3 prefix.
+7. Added the contact-page Google Map, database-backed hours and delivery announcement, Foodeez social destinations, site-wide WhatsApp access, and localized SweetNSavour-powered blog pages.
 
 ## Production blockers
 
 - Replace temporary editorial Unsplash photography with approved restaurant photography.
 - Export approved raster/SVG wordmark, monogram, favicon, social image, and Android launcher icons. The live product currently uses the approved text-only typographic treatment because image-generation quota was unavailable.
-- Add the confirmed menu, prices, opening hours, delivery/pickup rules, legal copy, social links, VAT status, and payment credentials.
+- Approve or replace the provisional menu, prices, allergens, opening hours, delivery/pickup rules, and representative product photography.
+- Confirm whether the intentionally shared Foodeez Facebook/Instagram destinations should remain or be replaced by SaltNPepper-owned profiles.
+- Add final legal copy, VAT status, and payment credentials.
 - Publish a signed Android APK only after hardware/printer acceptance.
 - Do not change DNS until the owner gives written launch approval.

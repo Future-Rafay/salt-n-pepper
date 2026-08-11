@@ -17,6 +17,15 @@ This is the standalone SaltNPepper restaurant website, admin panel, backend API,
 - Do not invent cuisine, menu, prices, hours, delivery rules, VAT, social links, or legal claims. Hide unconfirmed content and keep `content-todo.md` current.
 - Temporary editorial imagery must be credited and must not be presented as actual SaltNPepper dishes or premises.
 
+## Public content integrations
+
+- The user approved a provisional development catalog: 13 bilingual Pakistani grill products, daily 11:00–22:00 pickup/delivery, and delivery to 8154 for CHF 5 with CHF 30 minimum and free delivery from CHF 60. These remain production-blocking drafts in `content-todo.md`, not confirmed restaurant claims.
+- New uploads use the `SaltNPepper/{brand|menu|products}/` S3 key prefix. Prisma stores object keys, `resolvePublicImageUrl` remains the only public URL resolver, and the bucket policy grants read-only access to `SaltNPepper/*`; do not broaden it.
+- The global announcement is derived from the active delivery zone so its postcode, minimum, and free-delivery threshold stay aligned with checkout. `SiteSettings.announcementActive` remains the display switch.
+- The contact map is a native lazy Google Maps embed for the supplied address. CSP permits frames only from `www.google.com`; do not add a map SDK or API key unless the embed is insufficient.
+- Facebook and Instagram intentionally point to Foodeez until SaltNPepper-owned profiles are supplied. WhatsApp is derived from the existing restaurant phone as `https://wa.me/41764089430`.
+- `/de/blog` and `/en/blog` read the shared `sweetnsavour` WordPress category from `mydaytogo.com`. Fetches stay server-side with bounded revalidation, external payloads are Zod-validated, and article HTML passes the `sanitize-html` allowlist. Blog content is not copied into Prisma, admin, or Android.
+
 ## Architecture
 
 - Server Components are the default. Add client components only for real interactivity.
