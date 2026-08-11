@@ -39,7 +39,7 @@ function getS3Client() {
 export async function createImageUploadUrl(input: z.input<typeof uploadInputSchema>) {
   const values = uploadInputSchema.parse(input);
   const env = getS3Env();
-  const key = `${values.scope}/${randomUUID()}.${extensions[values.contentType]}`;
+  const key = `SaltNPepper/${values.scope}/${randomUUID()}.${extensions[values.contentType]}`;
   const command = new PutObjectCommand({
     Bucket: env.S3_BUCKET_NAME,
     Key: key,

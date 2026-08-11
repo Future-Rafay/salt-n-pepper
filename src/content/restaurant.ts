@@ -53,3 +53,18 @@ export const editorialPhotography = [
     credit: "Temporary editorial photograph from Unsplash",
   },
 ] as const;
+
+export const productPhotography = [
+  { key: "SaltNPepper/products/samosa.jpg", source: "https://unsplash.com/photos/3oc6OzX4LaQ", credit: "Juli Moreira / Unsplash", use: "Vegetable Samosa" },
+  { key: "SaltNPepper/products/chicken-pakora.jpg", source: "https://unsplash.com/photos/inz8vyeEumY", credit: "Abhijit Biswas / Unsplash", use: "Chicken Pakora" },
+  { key: "SaltNPepper/products/chicken-tikka.jpg", source: "https://unsplash.com/photos/d0ey0aExQbk", credit: "Dr Muhammad Amer / Unsplash", use: "Chicken Tikka and Seekh Kebab" },
+  { key: "SaltNPepper/products/mixed-grill.jpg", source: "https://unsplash.com/photos/gM5Bdzp7LhY", credit: "Gang Hao / Unsplash", use: "Mixed Grill" },
+  { key: "SaltNPepper/products/butter-chicken.jpg", source: "https://unsplash.com/photos/sqcH2q7lkvo", credit: "Raman / Unsplash", use: "Butter Chicken" },
+  { key: "SaltNPepper/products/chicken-karahi.jpg", source: "https://unsplash.com/photos/8zLfugmjMLc", credit: "Imad 786 / Unsplash", use: "Chicken Karahi and Chana Masala" },
+  { key: "SaltNPepper/products/chana-masala.jpg", source: "https://unsplash.com/photos/owkrXxo5vdA", credit: "Rahul Chakraborty / Unsplash", use: "Chana Masala" },
+  { key: "SaltNPepper/products/chicken-biryani.jpg", source: "https://unsplash.com/photos/ysmeQt1dzcw", credit: "Mario Raj / Unsplash", use: "Chicken and Vegetable Biryani" },
+  { key: "SaltNPepper/products/vegetable-biryani.jpg", source: "https://unsplash.com/photos/0fUy3hnEJoI", credit: "Kalyani Akella / Unsplash", use: "Vegetable Biryani" },
+  { key: "SaltNPepper/products/naan.jpg", source: "https://unsplash.com/photos/h7cZs0aFicw", credit: "Rashpal Singh / Unsplash", use: "Naan" },
+  { key: "SaltNPepper/products/mango-lassi.jpg", source: "https://unsplash.com/photos/7H82VXTVifU", credit: "Lakshya Thakur / Unsplash", use: "Mango Lassi" },
+  { key: "SaltNPepper/products/gulab-jamun.jpg", source: "https://unsplash.com/photos/2oJ4eGRPqrE", credit: "Umair Ali Asad / Unsplash", use: "Gulab Jamun" },
+] as const;

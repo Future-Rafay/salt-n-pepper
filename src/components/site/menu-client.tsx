@@ -226,7 +226,7 @@ export function MenuClient({ categories, locale }: { categories: MenuCategory[];
         </div>
       ) : (
         <div className="space-y-16">
-          {filteredCategories.map((category) => (
+          {filteredCategories.map((category, categoryIndex) => (
             <section
               key={category.id}
               id={category.slug}
@@ -247,8 +247,8 @@ export function MenuClient({ categories, locale }: { categories: MenuCategory[];
               </div>
 
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {category.products.map((product) => (
-                  <ProductCard key={product.id} product={product} locale={locale} searchQuery={searchQuery} />
+                {category.products.map((product, productIndex) => (
+                  <ProductCard key={product.id} product={product} locale={locale} searchQuery={searchQuery} eager={categoryIndex === 0 && productIndex < 2} />
                 ))}
               </div>
             </section>
@@ -276,10 +276,12 @@ function ProductCard({
   product,
   locale,
   searchQuery,
+  eager,
 }: {
   product: MenuCategory["products"][number];
   locale: "de" | "en";
   searchQuery: string;
+  eager: boolean;
 }) {
   const { add } = useCart();
   const [variantId, setVariantId] = useState(product.variants[0]?.id ?? "");
@@ -309,12 +311,17 @@ function ProductCard({
       {/* Product Image */}
       <div className="relative h-48 w-full bg-surface-warm overflow-hidden">
         <Image
-          src={product.imageKey?.startsWith("/") ? product.imageKey : "/images/editorial/restaurant-table.jpg"}
+          src={product.imageKey || "/images/editorial/restaurant-table.jpg"}
           alt={product.name}
           fill
+          loading={eager ? "eager" : "lazy"}
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60" />
+        <span className="absolute bottom-3 left-3 rounded-full bg-primary/85 px-2.5 py-1 text-[10px] font-bold text-white backdrop-blur">
+          {locale === "de" ? "Beispielfoto" : "Representative image"}
+        </span>
 
         {/* Dietary Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
