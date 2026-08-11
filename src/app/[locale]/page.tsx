@@ -2,9 +2,11 @@ import { ArrowUpRight, Clock3, Mail, MapPin, Phone, ShoppingBag, UtensilsCrossed
 import Image from "next/image";
 import Link from "next/link";
 
+import { BlogCard } from "@/components/site/blog-card";
 import { restaurantContent } from "@/content/restaurant";
 import { formatChf } from "@/lib/orders";
 import { localizedMetadata } from "@/lib/metadata";
+import { listLatestBlogPosts } from "@/lib/wordpress";
 import { getPublicConfig, getPublicMenu } from "@/server/services/catalog";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -22,9 +24,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 export default async function HomePage({ params }: { params: Promise<{ locale: string }> }) {
   const locale = (await params).locale === "en" ? "en" : "de";
   const de = locale === "de";
-  const [{ brand, fulfillment, hours }, categories] = await Promise.all([
+  const [{ brand, fulfillment, hours }, categories, latestPosts] = await Promise.all([
     getPublicConfig(),
     getPublicMenu(de ? "DE" : "EN"),
+    listLatestBlogPosts(4),
   ]);
   const copy = restaurantContent.copy[locale];
   const products = categories.flatMap((category) =>
@@ -111,6 +114,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
               <article key={product.id} className="overflow-hidden rounded-card border border-border bg-surface">
                 <div className="relative aspect-[4/3] bg-surface-warm">
                   <Image src={product.imageKey || restaurantContent.heroImage} alt={product.name} fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover" />
+                  <span className="absolute bottom-3 left-3 rounded-full bg-primary/85 px-3 py-1 text-[11px] font-bold text-white backdrop-blur">{de ? "Beispielfoto" : "Representative image"}</span>
                 </div>
                 <div className="p-6">
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-secondary">{product.category}</p>
@@ -139,7 +143,7 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
       <section className="bg-primary py-20 text-primary-foreground sm:py-28">
         <div className="mx-auto grid max-w-7xl gap-12 px-5 sm:px-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary-light">SaltNPepper · Oberglatt</p>
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary-contrast">SaltNPepper · Oberglatt</p>
             <h2 className="mt-4 max-w-3xl font-display text-4xl leading-[0.95] tracking-[-0.04em] sm:text-6xl">{copy.aboutTitle}</h2>
             <p className="mt-7 max-w-2xl text-lg leading-8 text-white/70">{about}</p>
             <div className="mt-9 flex flex-wrap gap-3">
@@ -152,6 +156,20 @@ export default async function HomePage({ params }: { params: Promise<{ locale: s
           </div>
         </div>
       </section>
+
+      {latestPosts.length > 0 && (
+        <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28" aria-labelledby="latest-blog-heading">
+          <div className="flex flex-col justify-between gap-5 border-b border-primary/15 pb-8 md:flex-row md:items-end">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-secondary">SweetNSavour · SaltNPepper</p>
+              <h2 id="latest-blog-heading" className="mt-3 max-w-3xl font-display text-4xl leading-none tracking-[-0.04em] text-primary sm:text-6xl">{de ? "Frische Ideen aus dem Blog." : "Fresh ideas from the blog."}</h2>
+              <p className="mt-4 max-w-2xl leading-7 text-muted">{de ? "Food-Guides, Ernährungstipps und Inspiration für Ihren Alltag." : "Food guides, nutrition tips, and practical inspiration for everyday life."}</p>
+            </div>
+            <Link href={`/${locale}/blog`} className="inline-flex min-h-11 items-center gap-2 font-bold text-primary hover:text-secondary">{de ? "Alle Artikel" : "All articles"}<ArrowUpRight className="h-5 w-5" aria-hidden="true" /></Link>
+          </div>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 xl:grid-cols-4">{latestPosts.map((post) => <BlogCard key={post.id} post={post} locale={locale} />)}</div>
+        </section>
+      )}
 
       <section className="mx-auto max-w-7xl px-5 py-20 sm:px-8 sm:py-28">
         <div className="grid gap-6 md:grid-cols-3">
