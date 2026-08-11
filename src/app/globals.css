@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+:root {
+  --brand-primary: #1c1917;
+  --brand-primary-light: #3f3a36;
+  --brand-primary-dark: #0f0e0d;
+  --brand-primary-foreground: #ffffff;
+  --brand-secondary: #b43a25;
+  --brand-secondary-light: #d3573f;
+  --brand-secondary-foreground: #ffffff;
+  --brand-background: #f7f2e8;
+  --brand-surface: #fffdf8;
+  --brand-surface-warm: #efe6d8;
+  --brand-foreground: #1c1917;
+  --brand-muted: #6f675e;
+  --brand-border: #d8cdbd;
+  --brand-success: #287a54;
+  --brand-destructive: #b42318;
+  --brand-ring: #b43a25;
+  --radius-control: 0.75rem;
+  --radius-card: 1rem;
+  --font-display: var(--font-archivo-black), "Arial Black", sans-serif;
+  --font-body: var(--font-dm-sans), "Segoe UI", sans-serif;
+}
+
+@theme inline {
+  --color-primary: var(--brand-primary);
+  --color-primary-light: var(--brand-primary-light);
+  --color-primary-dark: var(--brand-primary-dark);
+  --color-primary-foreground: var(--brand-primary-foreground);
+  --color-secondary: var(--brand-secondary);
+  --color-secondary-light: var(--brand-secondary-light);
+  --color-secondary-foreground: var(--brand-secondary-foreground);
+  --color-background: var(--brand-background);
+  --color-surface: var(--brand-surface);
+  --color-surface-warm: var(--brand-surface-warm);
+  --color-foreground: var(--brand-foreground);
+  --color-muted: var(--brand-muted);
+  --color-border: var(--brand-border);
+  --color-success: var(--brand-success);
+  --color-destructive: var(--brand-destructive);
+  --color-ring: var(--brand-ring);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+}
+
+* {
+  border-color: var(--brand-border);
+}
+
+html {
+  background: var(--brand-background);
+  color: var(--brand-foreground);
+  font-family: var(--font-body);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background-image: linear-gradient(rgba(28, 25, 23, 0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(28, 25, 23, 0.025) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand-ring);
+  outline-offset: 2px;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--brand-background);
+}
+::-webkit-scrollbar-thumb {
+  background: #c9bbaa;
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-secondary);
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes pulseBadge {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-badge {
+  animation: pulseBadge 0.3s ease-in-out;
+}
+
+/* Utility Classes */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(232, 221, 215, 0.7);
+}
+
+.glass-panel-dark {
+  background: rgba(43, 15, 27, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(197, 138, 31, 0.2);
+}
+
+.gold-gradient-text {
+  background: linear-gradient(135deg, #b43a25 0%, #d3573f 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.plum-gradient {
+  background: #1c1917;
+}
+
+.horizon-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #b43a25 50%, transparent 100%);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
