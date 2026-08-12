@@ -5,7 +5,6 @@ import { assertProductionEnvironment } from "@/config/env";
 
 const valid = {
   DATABASE_URL: "mysql://app:secret@db.example.com:3306/saltnpepper?sslaccept=strict",
-  DATABASE_CONNECTION_LIMIT: "5",
   DATABASE_SSL: "true",
   AUTH_SECRET: "a-production-secret-with-32-characters",
   NEXTAUTH_URL: "https://saltnpepper.ch",
@@ -23,8 +22,10 @@ const valid = {
   STRIPE_WEBHOOK_SECRET: "whsec_example",
 };
 
-test("production environment accepts managed TLS configuration", () => {
-  assert.equal(assertProductionEnvironment(valid).DATABASE_SSL, true);
+test("production environment accepts managed TLS configuration with the resilient pool default", () => {
+  const environment = assertProductionEnvironment(valid);
+  assert.equal(environment.DATABASE_SSL, true);
+  assert.equal(environment.DATABASE_CONNECTION_LIMIT, 10);
 });
 
 test("production environment rejects local, placeholder, and test payment values", () => {

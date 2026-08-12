@@ -1,4 +1,5 @@
-import { Camera, MessageCircle, Share2 } from "lucide-react";
+import { FaFacebookF, FaInstagram, FaWhatsapp } from "react-icons/fa6";
+import type { IconType } from "react-icons";
 
 export function SocialLinks({
   facebookUrl,
@@ -12,14 +13,14 @@ export function SocialLinks({
   locale: "de" | "en";
 }) {
   const links = [
-    facebookUrl && { href: facebookUrl, label: "Foodeez on Facebook", icon: Share2 },
-    instagramUrl && { href: instagramUrl, label: "Foodeez on Instagram", icon: Camera },
+    facebookUrl && { href: facebookUrl, label: "Foodeez on Facebook", icon: FaFacebookF },
+    instagramUrl && { href: instagramUrl, label: "Foodeez on Instagram", icon: FaInstagram },
     {
       href: whatsappUrl,
       label: locale === "de" ? "SaltNPepper auf WhatsApp kontaktieren" : "Contact SaltNPepper on WhatsApp",
-      icon: MessageCircle,
+      icon: FaWhatsapp,
     },
-  ].filter(Boolean) as Array<{ href: string; label: string; icon: typeof Share2 }>;
+  ].filter(Boolean) as Array<{ href: string; label: string; icon: IconType }>;
 
   return (
     <div className="flex flex-wrap gap-2">

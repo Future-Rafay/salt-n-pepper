@@ -1,10 +1,11 @@
 "use client";
 
-import { ChevronRight, Globe2, LogOut, Mail, MapPin, Megaphone, Menu, MessageCircle, Phone, Settings, ShoppingBag, User, X } from "lucide-react";
+import { ChevronRight, Globe2, LogOut, Mail, MapPin, Megaphone, Menu, Phone, Settings, ShoppingBag, User, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { usePathname, useRouter } from "next/navigation";
+import { FaWhatsapp } from "react-icons/fa6";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { BrandLogo } from "@/components/brand-logo";
@@ -31,6 +32,7 @@ export function SiteShell({ locale, user, publicConfig, children }: { locale: "d
   const other = locale === "de" ? "en" : "de";
   const cartTotalRappen = items.reduce((sum, item) => sum + item.unitPriceRappen * item.quantity, 0);
   const de = locale === "de";
+  const adminLabel = de ? "Admin-Dashboard" : "Admin dashboard";
   const announcement = publicConfig.announcement?.[locale];
   const whatsappUrl = `https://wa.me/${restaurantContent.phone.replace(/\D/g, "")}`;
   const labels = de
@@ -76,9 +78,9 @@ export function SiteShell({ locale, user, publicConfig, children }: { locale: "d
       </a>
 
       <div className="fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-6">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-2xl border border-border/80 bg-surface/95 shadow-[0_10px_35px_rgba(28,25,23,0.12)] backdrop-blur-xl">
+        <div className="mx-auto max-w-7xl overflow-visible rounded-2xl border border-border/80 bg-surface/95 shadow-[0_10px_35px_rgba(28,25,23,0.12)] backdrop-blur-xl">
           {announcement && (
-            <div className="flex min-h-10 items-center justify-center gap-2 bg-secondary px-4 py-2 text-center text-xs font-bold text-white sm:text-sm">
+            <div className="flex min-h-10 items-center justify-center gap-2 rounded-t-2xl bg-secondary px-4 py-2 text-center text-xs font-bold text-white sm:text-sm">
               <Megaphone className="h-4 w-4 shrink-0" aria-hidden="true" />
               <p>{announcement}</p>
             </div>
@@ -109,7 +111,7 @@ export function SiteShell({ locale, user, publicConfig, children }: { locale: "d
                 {count > 0 && <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-secondary px-1 text-[11px] text-white">{count}</span>}
               </Link>
 
-              <div className="relative" ref={dropdownRef}>
+              <div className="relative" ref={dropdownRef} onMouseEnter={() => setUserDropdownOpen(true)} onMouseLeave={() => setUserDropdownOpen(false)}>
                 <button type="button" onClick={() => setUserDropdownOpen((open) => !open)} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-border bg-surface text-primary hover:border-secondary" aria-expanded={userDropdownOpen} aria-haspopup="menu" aria-label={de ? "Benutzermenü" : "User menu"}>
                   {user?.image ? <Image src={user.image} alt="" width={30} height={30} className="rounded-lg object-cover" /> : user ? <span className="font-bold">{initial}</span> : <User className="h-5 w-5" aria-hidden="true" />}
                 </button>
@@ -123,7 +125,7 @@ export function SiteShell({ locale, user, publicConfig, children }: { locale: "d
                         </div>
                         <div className="mt-2 space-y-1">
                           <Link role="menuitem" href={`/${locale}/account/orders`} onClick={() => setUserDropdownOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold hover:bg-surface-warm"><ShoppingBag className="h-4 w-4 text-secondary" aria-hidden="true" />{labels.account}</Link>
-                          {user.role && user.role !== "CUSTOMER" && <Link role="menuitem" href="/admin" onClick={() => setUserDropdownOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold hover:bg-surface-warm"><Settings className="h-4 w-4 text-secondary" aria-hidden="true" />Admin</Link>}
+                          {(user.role === "OWNER" || user.role === "STAFF") && <Link role="menuitem" href="/admin" onClick={() => setUserDropdownOpen(false)} className="flex min-h-11 items-center gap-3 rounded-xl px-3 text-sm font-bold hover:bg-surface-warm"><Settings className="h-4 w-4 text-secondary" aria-hidden="true" />{adminLabel}</Link>}
                         </div>
                         <div className="my-2 border-t border-border" />
                         <button role="menuitem" type="button" onClick={() => signOut({ callbackUrl: `/${locale}` })} className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-sm font-bold text-destructive hover:bg-destructive/10"><LogOut className="h-4 w-4" aria-hidden="true" />{labels.logout}</button>
@@ -199,7 +201,7 @@ export function SiteShell({ locale, user, publicConfig, children }: { locale: "d
         aria-label={de ? "SaltNPepper auf WhatsApp kontaktieren" : "Contact SaltNPepper on WhatsApp"}
         className={`fixed right-4 z-40 inline-flex min-h-14 min-w-14 items-center justify-center rounded-full bg-[#1f8f4d] text-white shadow-2xl transition-transform hover:scale-105 sm:bottom-6 sm:right-6 ${count > 0 ? "bottom-20" : "bottom-4"}`}
       >
-        <MessageCircle className="h-6 w-6" aria-hidden="true" />
+        <FaWhatsapp className="h-6 w-6" aria-hidden="true" />
       </a>
 
       {count > 0 && (

@@ -13,9 +13,9 @@ function createPrismaClient() {
     password: decodeURIComponent(url.password),
     database: decodeURIComponent(url.pathname.slice(1)),
     connectionLimit: env.DATABASE_CONNECTION_LIMIT,
-    acquireTimeout: 10_000,
-    connectTimeout: 10_000,
-    idleTimeout: 60,
+    acquireTimeout: 30_000,
+    connectTimeout: 15_000,
+    idleTimeout: 300,
     ssl: env.DATABASE_SSL
       ? {
           rejectUnauthorized: true,

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const databaseSchema = z.object({
   DATABASE_URL: z.string().url().startsWith("mysql://"),
-  DATABASE_CONNECTION_LIMIT: z.coerce.number().int().min(1).max(10).default(5),
+  DATABASE_CONNECTION_LIMIT: z.coerce.number().int().min(1).max(10).default(10),
   DATABASE_SSL: z.enum(["true", "false"]).default("false").transform((value) => value === "true"),
   DATABASE_SSL_CA_BASE64: z.string().min(1).optional(),
 });
