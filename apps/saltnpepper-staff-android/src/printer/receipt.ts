@@ -8,31 +8,89 @@ function money(rappen: number) {
   return `CHF ${(rappen / 100).toFixed(2)}`;
 }
 
-function line(text = "", width: PaperWidth = 58) {
-  return text.slice(0, lineWidth[width]).padEnd(lineWidth[width], " ");
+function wrap(text: string, width: PaperWidth, indent = "") {
+  const max = lineWidth[width] - indent.length;
+  const words = text.trim().split(/\s+/);
+  const rows: string[] = [];
+  let row = "";
+  for (const word of words) {
+    if (word.length > max) {
+      if (row) rows.push(row);
+      for (let index = 0; index < word.length; index += max) rows.push(word.slice(index, index + max));
+      row = "";
+    } else if (!row || row.length + word.length + 1 <= max) {
+      row += `${row ? " " : ""}${word}`;
+    } else {
+      rows.push(row);
+      row = word;
+    }
+  }
+  if (row) rows.push(row);
+  return (rows.length ? rows : [""]).map((value) => `${indent}${value}`);
+}
+
+function priceLine(label: string, value: string, width: PaperWidth) {
+  const gap = lineWidth[width] - label.length - value.length;
+  return gap > 0 ? `${label}${" ".repeat(gap)}${value}` : [...wrap(label, width), value];
 }
 
 export function formatReceipt(order: Order, width: PaperWidth) {
+  const divider = "-".repeat(lineWidth[width]);
+  const german = order.locale === "DE";
+  const dateTime = (value: string) => new Intl.DateTimeFormat(german ? "de-CH" : "en-CH", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "Europe/Zurich",
+  }).format(new Date(value));
   const rows = [
-    line("SALTNPPEPPER", width),
-    line(order.orderNumber, width),
-    line(order.fulfillmentType, width),
-    line(`Customer: ${order.customerName}`, width),
-    line(`Phone: ${order.customerPhone}`, width),
-    line("", width),
+    "SALTNPPEPPER",
+    ...wrap("Allmendstrasse 18, 8154 Oberglatt", width),
+    "+41 76 408 94 30",
+    "info@saltnpepper.ch",
+    "saltnpepper.ch",
+    "",
+    divider,
+    ...wrap(`Order / Bestellung: ${order.orderNumber}`, width),
+    ...wrap(`Type / Art: ${order.fulfillmentType}`, width),
+    ...wrap(`Placed / Bestellt: ${dateTime(order.createdAt)}`, width),
+    ...(order.scheduledFor ? wrap(`Scheduled / Geplant: ${dateTime(order.scheduledFor)}`, width) : []),
+    ...(order.estimatedReadyAt ? wrap(`ETA: ${dateTime(order.estimatedReadyAt)}`, width) : []),
+    ...wrap(`Customer / Kunde: ${order.customerName}`, width),
+    ...wrap(`Phone / Telefon: ${order.customerPhone}`, width),
+    ...(order.address
+      ? wrap(
+          `Address / Adresse: ${order.address.street}${order.address.streetExtra ? `, ${order.address.streetExtra}` : ""}, ${order.address.postalCode} ${order.address.city}`,
+          width,
+        )
+      : []),
+    divider,
     ...order.items.flatMap((item) => [
-      line(`${item.quantity}x ${item.productNameEnSnapshot}`, width),
-      ...(item.variantNameEnSnapshot ? [line(`  ${item.variantNameEnSnapshot}`, width)] : []),
-      ...item.options.map((option) => line(`  + ${option.nameEnSnapshot}`, width)),
-      line(`  ${money(item.lineSubtotalRappen)}`, width),
+      ...wrap(`${item.quantity}x ${german ? item.productNameDe : item.productNameEn}`, width),
+      ...(item.variantNameDe || item.variantNameEn
+        ? wrap((german ? item.variantNameDe : item.variantNameEn) || "", width, "  ")
+        : []),
+      ...item.options.flatMap((option) => wrap(`+ ${german ? option.nameDe : option.nameEn}`, width, "  ")),
+      ...priceLine("", money(item.lineSubtotalRappen), width),
     ]),
-    line("", width),
-    line(`Total ${money(order.totalRappen)}`, width),
-    order.note ? line(`Note: ${order.note}`, width) : "",
+    divider,
+    ...priceLine("Subtotal / Zwischensumme", money(order.subtotalRappen), width),
+    ...(order.discountRappen ? priceLine("Discount / Rabatt", `-${money(order.discountRappen)}`, width) : []),
+    ...(order.deliveryFeeRappen ? priceLine("Delivery / Lieferung", money(order.deliveryFeeRappen), width) : []),
+    ...(order.taxAmountRappen ? priceLine("Tax / MwSt.", money(order.taxAmountRappen), width) : []),
+    ...priceLine("TOTAL / SUMME", money(order.totalRappen), width),
+    ...wrap(`Payment / Zahlung: ${order.paymentMethod} (${order.payment?.status || "PENDING"})`, width),
+    ...(order.note ? ["", ...wrap(`Note / Hinweis: ${order.note}`, width)] : []),
+    "",
+    divider,
+    "Feedback / Beschwerden",
+    "+41 76 408 94 30",
+    "info@saltnpepper.ch",
+    "",
+    "Vielen Dank / Thank you!",
   ];
-  return `${rows.filter(Boolean).join("\n")}\n\n`;
+  return `${rows.flat().join("\n")}\n\n\n`;
 }
 
 export function receiptToEscPosText(order: Order, width: PaperWidth) {
-  return `\x1b@\x1ba\x01${formatReceipt(order, width)}\x1dV\x00`;
+  return formatReceipt(order, width);
 }

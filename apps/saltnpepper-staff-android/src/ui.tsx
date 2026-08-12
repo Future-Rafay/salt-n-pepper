@@ -1,5 +1,5 @@
 import React from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from "react-native";
 
 export const colors = {
   plum: "#1C1917",
@@ -9,7 +9,9 @@ export const colors = {
   text: "#1C1917",
   muted: "#6F675E",
   border: "#D8CDBD",
+  subtle: "#EFE6D8",
   success: "#287A54",
+  warning: "#9A6700",
   danger: "#B42318",
 };
 
@@ -17,47 +19,56 @@ export function Button({
   label,
   onPress,
   danger,
+  secondary,
   disabled,
+  loading,
 }: {
   label: string;
   onPress: () => void;
   danger?: boolean;
+  secondary?: boolean;
   disabled?: boolean;
+  loading?: boolean;
 }) {
+  const unavailable = disabled || loading;
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      disabled={disabled}
+      accessibilityState={{ busy: loading, disabled: unavailable }}
+      disabled={unavailable}
+      hitSlop={4}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
-        danger ? styles.dangerButton : styles.primaryButton,
-        disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
+        danger ? styles.dangerButton : secondary ? styles.secondaryButton : styles.primaryButton,
+        unavailable && styles.disabled,
+        pressed && !unavailable && styles.pressed,
       ]}
     >
-      <Text style={styles.buttonText}>{label}</Text>
+      {loading ? <ActivityIndicator color={secondary ? colors.text : "#FFFFFF"} /> : null}
+      <Text style={[styles.buttonText, secondary && styles.secondaryButtonText]}>{label}</Text>
     </Pressable>
   );
 }
 
-export function Field(props: {
+export function Field({ label, error, multiline, style: _style, ...inputProps }: Omit<TextInputProps, "style"> & {
   label: string;
-  value: string;
-  onChangeText: (value: string) => void;
-  secureTextEntry?: boolean;
-  multiline?: boolean;
+  error?: string;
+  style?: never;
 }) {
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{props.label}</Text>
+      <Text style={styles.label}>{label}</Text>
       <TextInput
-        accessibilityLabel={props.label}
+        accessibilityLabel={label}
+        accessibilityState={{ disabled: inputProps.editable === false }}
         autoCapitalize="none"
-        style={[styles.input, props.multiline && styles.multiline]}
-        {...props}
+        multiline={multiline}
+        style={[styles.input, multiline && styles.multiline, error && styles.inputError]}
+        {...inputProps}
       />
+      {error ? <Text accessibilityLiveRegion="polite" style={styles.errorText}>{error}</Text> : null}
     </View>
   );
 }
@@ -72,23 +83,29 @@ export function Loading() {
 
 export const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg },
-  content: { gap: 14, padding: 16, paddingBottom: 28 },
+  content: { alignSelf: "center", gap: 16, maxWidth: 920, padding: 16, paddingBottom: 32, width: "100%" },
   center: { alignItems: "center", flex: 1, justifyContent: "center" },
-  title: { color: colors.text, fontSize: 24, fontWeight: "800" },
+  title: { color: colors.text, fontSize: 24, fontWeight: "800", lineHeight: 31 },
   wordmark: { color: colors.text, fontSize: 34, fontWeight: "900", letterSpacing: -2 },
-  subtitle: { color: colors.muted, fontSize: 14, lineHeight: 20 },
-  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 16, borderWidth: 1, elevation: 2, gap: 8, padding: 16 },
+  subtitle: { color: colors.muted, fontSize: 15, lineHeight: 22 },
+  card: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 16, borderWidth: 1, elevation: 2, gap: 10, padding: 16 },
   row: { alignItems: "center", flexDirection: "row", gap: 8, justifyContent: "space-between" },
-  label: { color: colors.text, fontSize: 13, fontWeight: "700" },
-  muted: { color: colors.muted, fontSize: 13 },
+  label: { color: colors.text, fontSize: 14, fontWeight: "700", lineHeight: 20 },
+  muted: { color: colors.muted, fontSize: 14, lineHeight: 20 },
   field: { gap: 6 },
-  input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, color: colors.text, minHeight: 50, paddingHorizontal: 14 },
+  input: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 12, borderWidth: 1, color: colors.text, fontSize: 16, minHeight: 52, paddingHorizontal: 14 },
+  inputError: { borderColor: colors.danger },
+  errorText: { color: colors.danger, fontSize: 13, lineHeight: 18 },
   multiline: { minHeight: 96, paddingTop: 12, textAlignVertical: "top" },
-  button: { alignItems: "center", borderRadius: 12, justifyContent: "center", minHeight: 50, paddingHorizontal: 16 },
+  button: { alignItems: "center", borderRadius: 12, flexDirection: "row", gap: 8, justifyContent: "center", minHeight: 48, paddingHorizontal: 16, paddingVertical: 12 },
   primaryButton: { backgroundColor: colors.plum },
+  secondaryButton: { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 },
   dangerButton: { backgroundColor: colors.danger },
   disabled: { opacity: 0.45 },
   pressed: { opacity: 0.78 },
-  buttonText: { color: "#FFFFFF", fontSize: 15, fontWeight: "800" },
-  status: { alignSelf: "flex-start", borderColor: colors.border, borderRadius: 999, borderWidth: 1, color: colors.text, fontSize: 12, fontWeight: "800", paddingHorizontal: 8, paddingVertical: 4 },
+  buttonText: { color: "#FFFFFF", flexShrink: 1, fontSize: 15, fontWeight: "800", textAlign: "center" },
+  secondaryButtonText: { color: colors.text },
+  status: { alignSelf: "flex-start", backgroundColor: colors.subtle, borderRadius: 999, color: colors.text, fontSize: 12, fontWeight: "800", overflow: "hidden", paddingHorizontal: 10, paddingVertical: 6 },
+  sectionTitle: { color: colors.text, fontSize: 18, fontWeight: "800", lineHeight: 24 },
+  divider: { backgroundColor: colors.border, height: StyleSheet.hairlineWidth },
 });

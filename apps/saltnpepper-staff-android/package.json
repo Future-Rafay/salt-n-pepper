@@ -5,6 +5,7 @@
   "scripts": {
     "android": "react-native run-android",
     "start": "react-native start",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --experimental-strip-types src/presentation.test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -12,8 +12,19 @@ export type Session = {
   user: User;
 };
 
+export type OrderStatus =
+  | "PAYMENT_PENDING"
+  | "CONFIRMED"
+  | "PREPARING"
+  | "READY_FOR_PICKUP"
+  | "OUT_FOR_DELIVERY"
+  | "COMPLETED"
+  | "CANCELLED";
+
+export type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "PARTIALLY_REFUNDED" | "REFUNDED";
+
 export type AllowedActions = {
-  nextStatus: string | null;
+  nextStatus: OrderStatus | null;
   canConfirmCash: boolean;
   canCancel: boolean;
   canRefundAndCancel: boolean;
@@ -21,32 +32,69 @@ export type AllowedActions = {
 
 export type Order = {
   orderNumber: string;
+  locale: "DE" | "EN";
   customerName: string;
+  customerEmail: string;
   customerPhone: string;
   fulfillmentType: "DELIVERY" | "PICKUP";
-  status: string;
-  paymentMethod: string;
+  status: OrderStatus;
+  paymentMethod: "STRIPE" | "CASH_ON_DELIVERY" | "PAY_AT_PICKUP";
+  payment: {
+    provider: "STRIPE" | "CASH";
+    status: PaymentStatus;
+    amountRappen: number;
+    refundedRappen: number;
+    paidAt: string | null;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
   scheduledFor: string | null;
   estimatedReadyAt: string | null;
+  subtotalRappen: number;
+  discountRappen: number;
+  deliveryFeeRappen: number;
+  taxRateBps: number | null;
+  taxAmountRappen: number;
   totalRappen: number;
   remainingRefundableRappen: number;
   version: number;
   note: string | null;
-  address?: {
+  deliveryZoneNameDe: string | null;
+  deliveryZoneNameEn: string | null;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  cancellationReason: string | null;
+  address: {
+    recipientName: string;
+    phone: string;
     street: string;
     streetExtra: string | null;
     postalCode: string;
     city: string;
+    countryCode: string;
   } | null;
   items: Array<{
-    id: string;
-    productNameDeSnapshot: string;
-    productNameEnSnapshot: string;
-    variantNameDeSnapshot: string | null;
-    variantNameEnSnapshot: string | null;
+    imageUrl: string | null;
+    productNameDe: string;
+    productNameEn: string;
+    variantNameDe: string | null;
+    variantNameEn: string | null;
+    unitPriceRappen: number;
     quantity: number;
     lineSubtotalRappen: number;
-    options: Array<{ nameDeSnapshot: string; nameEnSnapshot: string }>;
+    options: Array<{
+      nameDe: string;
+      nameEn: string;
+      priceDeltaRappen: number;
+    }>;
+  }>;
+  statusEvents: Array<{
+    fromStatus: OrderStatus | null;
+    toStatus: OrderStatus;
+    reason: string | null;
+    note: string | null;
+    createdAt: string;
+    actorName: string | null;
   }>;
   allowedActions: AllowedActions;
 };
