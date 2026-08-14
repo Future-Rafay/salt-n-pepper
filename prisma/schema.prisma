@@ -101,7 +101,7 @@ model SiteSettings {
   id                 Int      @id @default(1)
   displayName        String   @default("SaltNPepper") @db.VarChar(120)
   legalName          String?  @db.VarChar(160)
-  slug               String   @unique @default("saltnpepper") @db.VarChar(120)
+  slug               String   @unique(map: "SiteSettings_slug_key") @default("saltnpepper") @db.VarChar(120)
   email              String?  @db.VarChar(320)
   phone              String?  @db.VarChar(40)
   street             String?  @db.VarChar(200)
@@ -133,6 +133,8 @@ model SiteSettings {
   facebookUrl        String?  @db.VarChar(512)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+
+  @@map("sitesettings")
 }
 
 model FulfillmentSettings {
@@ -151,6 +153,8 @@ model FulfillmentSettings {
   pickupInstructionsEn     String?  @db.Text
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
+
+  @@map("fulfillmentsettings")
 }
 
 model OpeningWindow {
@@ -164,7 +168,8 @@ model OpeningWindow {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  @@index([fulfillmentType, weekday, active, sortOrder])
+  @@index([fulfillmentType, weekday, active, sortOrder], map: "OpeningWindow_fulfillmentType_weekday_active_sortOrder_idx")
+  @@map("openingwindow")
 }
 
 model ServiceException {
@@ -178,7 +183,8 @@ model ServiceException {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
-  @@index([date, fulfillmentType])
+  @@index([date, fulfillmentType], map: "ServiceException_date_fulfillmentType_idx")
+  @@map("serviceexception")
 }
 
 model FulfillmentSlot {
@@ -192,8 +198,9 @@ model FulfillmentSlot {
   updatedAt       DateTime        @updatedAt
   orders          Order[]
 
-  @@unique([fulfillmentType, startsAt])
-  @@index([startsAt, closed])
+  @@unique([fulfillmentType, startsAt], map: "FulfillmentSlot_fulfillmentType_startsAt_key")
+  @@index([startsAt, closed], map: "FulfillmentSlot_startsAt_closed_idx")
+  @@map("fulfillmentslot")
 }
 
 model DeliveryZone {
@@ -211,23 +218,25 @@ model DeliveryZone {
   postalCodes                 DeliveryZonePostalCode[]
   orders                      Order[]
 
-  @@index([active, sortOrder])
+  @@index([active, sortOrder], map: "DeliveryZone_active_sortOrder_idx")
+  @@map("deliveryzone")
 }
 
 model DeliveryZonePostalCode {
   id             String       @id @default(cuid())
   deliveryZoneId String
-  postalCode     String       @unique @db.Char(4)
+  postalCode     String       @unique(map: "DeliveryZonePostalCode_postalCode_key") @db.Char(4)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
-  deliveryZone   DeliveryZone @relation(fields: [deliveryZoneId], references: [id], onDelete: Cascade)
+  deliveryZone   DeliveryZone @relation(fields: [deliveryZoneId], references: [id], onDelete: Cascade, map: "DeliveryZonePostalCode_deliveryZoneId_fkey")
 
-  @@index([deliveryZoneId])
+  @@index([deliveryZoneId], map: "DeliveryZonePostalCode_deliveryZoneId_idx")
+  @@map("deliveryzonepostalcode")
 }
 
 model Category {
   id            String    @id @default(cuid())
-  slug          String    @unique @db.VarChar(160)
+  slug          String    @unique(map: "Category_slug_key") @db.VarChar(160)
   nameDe        String    @db.VarChar(160)
   nameEn        String    @db.VarChar(160)
   descriptionDe String?   @db.Text
@@ -239,13 +248,14 @@ model Category {
   updatedAt     DateTime  @updatedAt
   products      Product[]
 
-  @@index([deletedAt, active, sortOrder])
+  @@index([deletedAt, active, sortOrder], map: "Category_deletedAt_active_sortOrder_idx")
+  @@map("category")
 }
 
 model Product {
   id                  String                      @id @default(cuid())
   categoryId          String
-  slug                String                      @unique @db.VarChar(180)
+  slug                String                      @unique(map: "Product_slug_key") @db.VarChar(180)
   nameDe              String                      @db.VarChar(180)
   nameEn              String                      @db.VarChar(180)
   descriptionDe       String?                     @db.Text
@@ -261,15 +271,16 @@ model Product {
   deletedAt           DateTime?
   createdAt           DateTime                    @default(now())
   updatedAt           DateTime                    @updatedAt
-  category            Category                    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  category            Category                    @relation(fields: [categoryId], references: [id], onDelete: Restrict, map: "Product_categoryId_fkey")
   variants            ProductVariant[]
   optionGroups        OptionGroup[]
   availabilityWindows ProductAvailabilityWindow[]
   allergens           ProductAllergen[]
   orderItems          OrderItem[]
 
-  @@index([categoryId, deletedAt, active, sortOrder])
-  @@index([deletedAt, available])
+  @@index([categoryId, deletedAt, active, sortOrder], map: "Product_categoryId_deletedAt_active_sortOrder_idx")
+  @@index([deletedAt, available], map: "Product_deletedAt_available_idx")
+  @@map("product")
 }
 
 model ProductVariant {
@@ -277,17 +288,18 @@ model ProductVariant {
   productId    String
   nameDe       String      @db.VarChar(160)
   nameEn       String      @db.VarChar(160)
-  sku          String?     @unique @db.VarChar(100)
+  sku          String?     @unique(map: "ProductVariant_sku_key") @db.VarChar(100)
   priceRappen  Int
   active       Boolean     @default(true)
   sortOrder    Int         @default(0)
   deletedAt    DateTime?
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
-  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductVariant_productId_fkey")
   orderItems   OrderItem[]
 
-  @@index([productId, deletedAt, active, sortOrder])
+  @@index([productId, deletedAt, active, sortOrder], map: "ProductVariant_productId_deletedAt_active_sortOrder_idx")
+  @@map("productvariant")
 }
 
 model OptionGroup {
@@ -303,10 +315,11 @@ model OptionGroup {
   deletedAt         DateTime?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
-  product           Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product           Product        @relation(fields: [productId], references: [id], onDelete: Cascade, map: "OptionGroup_productId_fkey")
   choices           OptionChoice[]
 
-  @@index([productId, deletedAt, active, sortOrder])
+  @@index([productId, deletedAt, active, sortOrder], map: "OptionGroup_productId_deletedAt_active_sortOrder_idx")
+  @@map("optiongroup")
 }
 
 model OptionChoice {
@@ -320,10 +333,11 @@ model OptionChoice {
   deletedAt        DateTime?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
-  optionGroup      OptionGroup       @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  optionGroup      OptionGroup       @relation(fields: [optionGroupId], references: [id], onDelete: Cascade, map: "OptionChoice_optionGroupId_fkey")
   orderItemOptions OrderItemOption[]
 
-  @@index([optionGroupId, deletedAt, active, sortOrder])
+  @@index([optionGroupId, deletedAt, active, sortOrder], map: "OptionChoice_optionGroupId_deletedAt_active_sortOrder_idx")
+  @@map("optionchoice")
 }
 
 model ProductAvailabilityWindow {
@@ -334,36 +348,40 @@ model ProductAvailabilityWindow {
   endMinute   Int
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductAvailabilityWindow_productId_fkey")
 
-  @@index([productId, weekday])
+  @@index([productId, weekday], map: "ProductAvailabilityWindow_productId_weekday_idx")
+  @@map("productavailabilitywindow")
 }
 
 model Allergen {
   id        String            @id @default(cuid())
-  code      String            @unique @db.VarChar(64)
+  code      String            @unique(map: "Allergen_code_key") @db.VarChar(64)
   nameDe    String            @db.VarChar(120)
   nameEn    String            @db.VarChar(120)
   sortOrder Int               @default(0)
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
   products  ProductAllergen[]
+
+  @@map("allergen")
 }
 
 model ProductAllergen {
   productId  String
   allergenId String
   createdAt  DateTime @default(now())
-  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  allergen   Allergen @relation(fields: [allergenId], references: [id], onDelete: Restrict)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductAllergen_productId_fkey")
+  allergen   Allergen @relation(fields: [allergenId], references: [id], onDelete: Restrict, map: "ProductAllergen_allergenId_fkey")
 
   @@id([productId, allergenId])
-  @@index([allergenId])
+  @@index([allergenId], map: "ProductAllergen_allergenId_idx")
+  @@map("productallergen")
 }
 
 model User {
   id                  String               @id @default(cuid())
-  email               String               @unique @db.VarChar(320)
+  email               String               @unique(map: "User_email_key") @db.VarChar(320)
   passwordHash        String?              @db.VarChar(255)
   name                String?              @db.VarChar(160)
   phone               String?              @db.VarChar(40)
@@ -386,7 +404,8 @@ model User {
   refundsRequested    Refund[]
   auditLogs           AuditLog[]
 
-  @@index([role, active])
+  @@index([role, active], map: "User_role_active_idx")
+  @@map("user")
 }
 
 model Account {
@@ -402,49 +421,53 @@ model Account {
   scope             String? @db.Text
   id_token          String? @db.Text
   session_state     String? @db.VarChar(255)
-  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Account_userId_fkey")
 
-  @@unique([provider, providerAccountId])
-  @@index([userId])
+  @@unique([provider, providerAccountId], map: "Account_provider_providerAccountId_key")
+  @@index([userId], map: "Account_userId_idx")
+  @@map("account")
 }
 
 model Session {
   id           String   @id @default(cuid())
-  sessionToken String   @unique @db.VarChar(255)
+  sessionToken String   @unique(map: "Session_sessionToken_key") @db.VarChar(255)
   userId       String
   expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "Session_userId_fkey")
 
-  @@index([userId])
-  @@index([expires])
+  @@index([userId], map: "Session_userId_idx")
+  @@index([expires], map: "Session_expires_idx")
+  @@map("session")
 }
 
 model PasswordResetToken {
   id        String    @id @default(cuid())
   userId    String
-  tokenHash String    @unique @db.Char(64)
+  tokenHash String    @unique(map: "PasswordResetToken_tokenHash_key") @db.Char(64)
   expiresAt DateTime
   usedAt    DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "PasswordResetToken_userId_fkey")
 
-  @@index([userId, expiresAt])
+  @@index([userId, expiresAt], map: "PasswordResetToken_userId_expiresAt_idx")
+  @@map("passwordresettoken")
 }
 
 model StaffInvitation {
   id              String    @id @default(cuid())
   email           String    @db.VarChar(320)
-  tokenHash       String    @unique @db.Char(64)
+  tokenHash       String    @unique(map: "StaffInvitation_tokenHash_key") @db.Char(64)
   invitedByUserId String?
   expiresAt       DateTime
   acceptedAt      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  invitedBy       User?     @relation("InvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull)
+  invitedBy       User?     @relation("InvitedBy", fields: [invitedByUserId], references: [id], onDelete: SetNull, map: "StaffInvitation_invitedByUserId_fkey")
 
-  @@index([email, acceptedAt])
-  @@index([invitedByUserId])
+  @@index([email, acceptedAt], map: "StaffInvitation_email_acceptedAt_idx")
+  @@index([invitedByUserId], map: "StaffInvitation_invitedByUserId_idx")
+  @@map("staffinvitation")
 }
 
 model CustomerAddress {
@@ -461,9 +484,10 @@ model CustomerAddress {
   isDefault     Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CustomerAddress_userId_fkey")
 
-  @@index([userId, isDefault])
+  @@index([userId, isDefault], map: "CustomerAddress_userId_isDefault_idx")
+  @@map("customeraddress")
 }
 
 model StaffDeviceSession {
@@ -471,21 +495,22 @@ model StaffDeviceSession {
   userId           String
   deviceName       String    @db.VarChar(160)
   platform         String    @default("android") @db.VarChar(40)
-  refreshTokenHash String    @unique @db.Char(64)
-  pushToken        String?   @unique @db.VarChar(512)
+  refreshTokenHash String    @unique(map: "StaffDeviceSession_refreshTokenHash_key") @db.Char(64)
+  pushToken        String?   @unique(map: "StaffDeviceSession_pushToken_key") @db.VarChar(512)
   expiresAt        DateTime
   lastSeenAt       DateTime  @default(now())
   revokedAt        DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
-  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade, map: "StaffDeviceSession_userId_fkey")
 
-  @@index([userId, revokedAt, expiresAt])
+  @@index([userId, revokedAt, expiresAt], map: "StaffDeviceSession_userId_revokedAt_expiresAt_idx")
+  @@map("staffdevicesession")
 }
 
 model PromoCode {
   id                    String            @id @default(cuid())
-  code                  String            @unique @db.VarChar(64)
+  code                  String            @unique(map: "PromoCode_code_key") @db.VarChar(64)
   type                  PromoType
   value                 Int
   minimumSubtotalRappen Int               @default(0)
@@ -499,32 +524,34 @@ model PromoCode {
   redemptions           PromoRedemption[]
   orders                Order[]
 
-  @@index([active, startsAt, endsAt])
+  @@index([active, startsAt, endsAt], map: "PromoCode_active_startsAt_endsAt_idx")
+  @@map("promocode")
 }
 
 model PromoRedemption {
   id              String    @id @default(cuid())
   promoCodeId     String
-  orderId         BigInt    @unique
+  orderId         BigInt    @unique(map: "PromoRedemption_orderId_key")
   userId          String?
   customerEmail   String    @db.VarChar(320)
   discountRappen  Int
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  promoCode       PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Restrict)
-  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  promoCode       PromoCode @relation(fields: [promoCodeId], references: [id], onDelete: Restrict, map: "PromoRedemption_promoCodeId_fkey")
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "PromoRedemption_orderId_fkey")
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull, map: "PromoRedemption_userId_fkey")
 
-  @@index([promoCodeId, createdAt])
-  @@index([promoCodeId, customerEmail])
-  @@index([userId])
+  @@index([promoCodeId, createdAt], map: "PromoRedemption_promoCodeId_createdAt_idx")
+  @@index([promoCodeId, customerEmail], map: "PromoRedemption_promoCodeId_customerEmail_idx")
+  @@index([userId], map: "PromoRedemption_userId_idx")
+  @@map("promoredemption")
 }
 
 model Order {
   id                         BigInt             @id @default(autoincrement())
-  checkoutKeyHash            String             @unique @db.Char(64)
+  checkoutKeyHash            String             @unique(map: "Order_checkoutKeyHash_key") @db.Char(64)
   userId                     String?
-  guestTrackingTokenHash     String?            @unique @db.Char(64)
+  guestTrackingTokenHash     String?            @unique(map: "Order_guestTrackingTokenHash_key") @db.Char(64)
   locale                     Locale             @default(DE)
   customerName               String             @db.VarChar(160)
   customerEmail              String             @db.VarChar(320)
@@ -552,10 +579,10 @@ model Order {
   cancellationReason         String?            @db.VarChar(500)
   createdAt                  DateTime           @default(now())
   updatedAt                  DateTime           @updatedAt
-  user                       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
-  slot                       FulfillmentSlot?   @relation(fields: [slotId], references: [id], onDelete: SetNull)
-  promoCode                  PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
-  deliveryZone               DeliveryZone?      @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
+  user                       User?              @relation(fields: [userId], references: [id], onDelete: SetNull, map: "Order_userId_fkey")
+  slot                       FulfillmentSlot?   @relation(fields: [slotId], references: [id], onDelete: SetNull, map: "Order_slotId_fkey")
+  promoCode                  PromoCode?         @relation(fields: [promoCodeId], references: [id], onDelete: SetNull, map: "Order_promoCodeId_fkey")
+  deliveryZone               DeliveryZone?      @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull, map: "Order_deliveryZoneId_fkey")
   address                    OrderAddress?
   items                      OrderItem[]
   statusEvents               OrderStatusEvent[]
@@ -563,18 +590,19 @@ model Order {
   promoRedemption            PromoRedemption?
   notifications              NotificationDelivery[]
 
-  @@index([userId, createdAt])
-  @@index([status, createdAt])
-  @@index([scheduledFor, status])
-  @@index([slotId, status])
-  @@index([paymentMethod, status])
-  @@index([promoCodeId])
-  @@index([deliveryZoneId])
+  @@index([userId, createdAt], map: "Order_userId_createdAt_idx")
+  @@index([status, createdAt], map: "Order_status_createdAt_idx")
+  @@index([scheduledFor, status], map: "Order_scheduledFor_status_idx")
+  @@index([slotId, status], map: "Order_slotId_status_idx")
+  @@index([paymentMethod, status], map: "Order_paymentMethod_status_idx")
+  @@index([promoCodeId], map: "Order_promoCodeId_idx")
+  @@index([deliveryZoneId], map: "Order_deliveryZoneId_idx")
+  @@map("order")
 }
 
 model OrderAddress {
   id            String   @id @default(cuid())
-  orderId       BigInt   @unique
+  orderId       BigInt   @unique(map: "OrderAddress_orderId_key")
   recipientName String   @db.VarChar(160)
   phone         String   @db.VarChar(40)
   street        String   @db.VarChar(200)
@@ -584,7 +612,9 @@ model OrderAddress {
   countryCode   String   @default("CH") @db.Char(2)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderAddress_orderId_fkey")
+
+  @@map("orderaddress")
 }
 
 model OrderItem {
@@ -601,14 +631,15 @@ model OrderItem {
   lineSubtotalRappen    Int
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
-  order                 Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product               Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
-  variant               ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  order                 Order             @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderItem_orderId_fkey")
+  product               Product?          @relation(fields: [productId], references: [id], onDelete: SetNull, map: "OrderItem_productId_fkey")
+  variant               ProductVariant?   @relation(fields: [variantId], references: [id], onDelete: SetNull, map: "OrderItem_variantId_fkey")
   options               OrderItemOption[]
 
-  @@index([orderId])
-  @@index([productId])
-  @@index([variantId])
+  @@index([orderId], map: "OrderItem_orderId_idx")
+  @@index([productId], map: "OrderItem_productId_idx")
+  @@index([variantId], map: "OrderItem_variantId_idx")
+  @@map("orderitem")
 }
 
 model OrderItemOption {
@@ -620,11 +651,12 @@ model OrderItemOption {
   priceDeltaRappen   Int           @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
-  orderItem          OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
-  optionChoice       OptionChoice? @relation(fields: [optionChoiceId], references: [id], onDelete: SetNull)
+  orderItem          OrderItem     @relation(fields: [orderItemId], references: [id], onDelete: Cascade, map: "OrderItemOption_orderItemId_fkey")
+  optionChoice       OptionChoice? @relation(fields: [optionChoiceId], references: [id], onDelete: SetNull, map: "OrderItemOption_optionChoiceId_fkey")
 
-  @@index([orderItemId])
-  @@index([optionChoiceId])
+  @@index([orderItemId], map: "OrderItemOption_orderItemId_idx")
+  @@index([optionChoiceId], map: "OrderItemOption_optionChoiceId_idx")
+  @@map("orderitemoption")
 }
 
 model OrderStatusEvent {
@@ -636,54 +668,57 @@ model OrderStatusEvent {
   reason      String?      @db.VarChar(300)
   note        String?      @db.Text
   createdAt   DateTime     @default(now())
-  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  actor       User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  order       Order        @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "OrderStatusEvent_orderId_fkey")
+  actor       User?        @relation(fields: [actorUserId], references: [id], onDelete: SetNull, map: "OrderStatusEvent_actorUserId_fkey")
 
-  @@index([orderId, createdAt])
-  @@index([actorUserId])
+  @@index([orderId, createdAt], map: "OrderStatusEvent_orderId_createdAt_idx")
+  @@index([actorUserId], map: "OrderStatusEvent_actorUserId_idx")
+  @@map("orderstatusevent")
 }
 
 model Payment {
   id                      String          @id @default(cuid())
-  orderId                 BigInt          @unique
+  orderId                 BigInt          @unique(map: "Payment_orderId_key")
   provider                PaymentProvider
   status                  PaymentStatus   @default(PENDING)
-  stripeCheckoutSessionId String?         @unique @db.VarChar(255)
-  stripePaymentIntentId   String?         @unique @db.VarChar(255)
+  stripeCheckoutSessionId String?         @unique(map: "Payment_stripeCheckoutSessionId_key") @db.VarChar(255)
+  stripePaymentIntentId   String?         @unique(map: "Payment_stripePaymentIntentId_key") @db.VarChar(255)
   amountRappen            Int
   refundedRappen          Int             @default(0)
   paidAt                  DateTime?
   failedAt                DateTime?
   createdAt               DateTime        @default(now())
   updatedAt               DateTime        @updatedAt
-  order                   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order                   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "Payment_orderId_fkey")
   refunds                 Refund[]
 
-  @@index([status, createdAt])
+  @@index([status, createdAt], map: "Payment_status_createdAt_idx")
+  @@map("payment")
 }
 
 model Refund {
   id                String       @id @default(cuid())
   paymentId         String
   requestedByUserId String?
-  stripeRefundId    String       @unique @db.VarChar(255)
+  stripeRefundId    String       @unique(map: "Refund_stripeRefundId_key") @db.VarChar(255)
   amountRappen      Int
   reason            String       @db.VarChar(500)
   status            RefundStatus @default(PENDING)
   failureMessage    String?      @db.Text
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
-  payment           Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade)
-  requestedBy       User?        @relation(fields: [requestedByUserId], references: [id], onDelete: SetNull)
+  payment           Payment      @relation(fields: [paymentId], references: [id], onDelete: Cascade, map: "Refund_paymentId_fkey")
+  requestedBy       User?        @relation(fields: [requestedByUserId], references: [id], onDelete: SetNull, map: "Refund_requestedByUserId_fkey")
 
-  @@index([paymentId, createdAt])
-  @@index([requestedByUserId])
-  @@index([status, createdAt])
+  @@index([paymentId, createdAt], map: "Refund_paymentId_createdAt_idx")
+  @@index([requestedByUserId], map: "Refund_requestedByUserId_idx")
+  @@index([status, createdAt], map: "Refund_status_createdAt_idx")
+  @@map("refund")
 }
 
 model StripeWebhookEvent {
   id          String                  @id @default(cuid())
-  eventId     String                  @unique @db.VarChar(255)
+  eventId     String                  @unique(map: "StripeWebhookEvent_eventId_key") @db.VarChar(255)
   type        String                  @db.VarChar(160)
   status      WebhookProcessingStatus @default(PROCESSING)
   error       String?                 @db.Text
@@ -691,7 +726,8 @@ model StripeWebhookEvent {
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
 
-  @@index([status, createdAt])
+  @@index([status, createdAt], map: "StripeWebhookEvent_status_createdAt_idx")
+  @@map("stripewebhookevent")
 }
 
 model NotificationDelivery {
@@ -700,7 +736,7 @@ model NotificationDelivery {
   channel          NotificationChannel
   kind             String             @db.VarChar(120)
   recipient        String             @db.VarChar(512)
-  deduplicationKey String             @unique @db.VarChar(255)
+  deduplicationKey String             @unique(map: "NotificationDelivery_deduplicationKey_key") @db.VarChar(255)
   status           NotificationStatus @default(PENDING)
   attemptCount     Int                @default(0)
   providerId       String?            @db.VarChar(255)
@@ -708,10 +744,11 @@ model NotificationDelivery {
   sentAt           DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
-  order            Order?             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order            Order?             @relation(fields: [orderId], references: [id], onDelete: Cascade, map: "NotificationDelivery_orderId_fkey")
 
-  @@index([orderId, createdAt])
-  @@index([status, createdAt])
+  @@index([orderId, createdAt], map: "NotificationDelivery_orderId_createdAt_idx")
+  @@index([status, createdAt], map: "NotificationDelivery_status_createdAt_idx")
+  @@map("notificationdelivery")
 }
 
 model AuditLog {
@@ -723,9 +760,10 @@ model AuditLog {
   metadata             Json?
   requestCorrelationId String?  @db.VarChar(120)
   createdAt            DateTime @default(now())
-  actor                User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+  actor                User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull, map: "AuditLog_actorUserId_fkey")
 
-  @@index([actorUserId, createdAt])
-  @@index([entityType, entityId, createdAt])
-  @@index([requestCorrelationId])
+  @@index([actorUserId, createdAt], map: "AuditLog_actorUserId_createdAt_idx")
+  @@index([entityType, entityId, createdAt], map: "AuditLog_entityType_entityId_createdAt_idx")
+  @@index([requestCorrelationId], map: "AuditLog_requestCorrelationId_idx")
+  @@map("auditlog")
 }
