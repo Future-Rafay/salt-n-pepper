@@ -25,6 +25,7 @@ export async function getMenuAdminData() {
         category: { select: { nameEn: true } },
         variants: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } },
         optionGroups: { where: { deletedAt: null }, include: { choices: { where: { deletedAt: null }, orderBy: { sortOrder: "asc" } } }, orderBy: { sortOrder: "asc" } },
+        suggestions: { include: { suggestedVariant: { include: { product: true } } }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         availabilityWindows: { orderBy: [{ weekday: "asc" }, { startMinute: "asc" }] },
         allergens: { select: { allergenId: true } },
       },
@@ -162,6 +163,22 @@ export async function saveOptionChoice(actorId: string, data: Prisma.OptionChoic
   const row = id ? await prisma.optionChoice.update({ where: { id, deletedAt: null }, data: values }) : await prisma.optionChoice.create({ data: values });
   await audit(prisma, actorId, id ? "OPTION_CHOICE_UPDATED" : "OPTION_CHOICE_CREATED", "OptionChoice", row.id);
   return row;
+}
+
+export async function saveProductSuggestion(actorId: string, data: Prisma.ProductSuggestionUncheckedCreateInput & { id?: string }) {
+  const { id, ...values } = data;
+  return prisma.$transaction(async (tx) => {
+    const row = id ? await tx.productSuggestion.update({ where: { id }, data: values }) : await tx.productSuggestion.create({ data: values });
+    await audit(tx, actorId, id ? "PRODUCT_SUGGESTION_UPDATED" : "PRODUCT_SUGGESTION_CREATED", "ProductSuggestion", row.id, { productId: row.productId, suggestedVariantId: row.suggestedVariantId });
+    return row;
+  });
+}
+
+export async function deleteProductSuggestion(actorId: string, id: string) {
+  await prisma.$transaction(async (tx) => {
+    const row = await tx.productSuggestion.delete({ where: { id } });
+    await audit(tx, actorId, "PRODUCT_SUGGESTION_DELETED", "ProductSuggestion", row.id, { productId: row.productId, suggestedVariantId: row.suggestedVariantId });
+  });
 }
 
 export async function saveAvailabilityWindow(actorId: string, data: Prisma.ProductAvailabilityWindowUncheckedCreateInput & { id?: string }) {

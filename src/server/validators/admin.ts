@@ -76,12 +76,12 @@ export const optionGroupSchema = z.object({
   id: databaseId.optional(),
   productId: databaseId,
   ...bilingualName,
-  required: checkbox,
   minimumSelections: integer(),
   maximumSelections: integer(1),
   active: checkbox,
   sortOrder: integer(),
-}).refine((value) => value.minimumSelections <= value.maximumSelections, { message: "Minimum selections cannot exceed maximum selections." });
+}).refine((value) => value.minimumSelections <= value.maximumSelections, { message: "Minimum selections cannot exceed maximum selections." })
+  .transform((value) => ({ ...value, required: value.minimumSelections > 0 }));
 
 export const optionChoiceSchema = z.object({
   id: databaseId.optional(),
@@ -89,6 +89,13 @@ export const optionChoiceSchema = z.object({
   ...bilingualName,
   priceDeltaRappen: chfRappen,
   active: checkbox,
+  sortOrder: integer(),
+});
+
+export const productSuggestionSchema = z.object({
+  id: databaseId.optional(),
+  productId: databaseId,
+  suggestedVariantId: databaseId,
   sortOrder: integer(),
 });
 

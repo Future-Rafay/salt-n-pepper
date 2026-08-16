@@ -27,6 +27,14 @@ type MenuCategory = {
     spiceLevel: string | null;
     allergens: Array<{ code: string; name: string }>;
     variants: Array<{ id: string; name: string; priceRappen: number }>;
+    suggestedItems: Array<{
+      productId: string;
+      productName: string;
+      variantId: string;
+      variantName: string;
+      priceRappen: number;
+      imageKey: string | null;
+    }>;
     optionGroups: Array<{
       id: string;
       name: string;
@@ -283,12 +291,17 @@ function ProductCard({
   searchQuery: string;
   eager: boolean;
 }) {
-  const { add } = useCart();
+  const { addMany } = useCart();
+  const [open, setOpen] = useState(false);
   const [variantId, setVariantId] = useState(product.variants[0]?.id ?? "");
   const [choiceIds, setChoiceIds] = useState<string[]>([]);
+  const [suggestedVariantIds, setSuggestedVariantIds] = useState<string[]>([]);
   const variant = product.variants.find((item) => item.id === variantId) ?? product.variants[0];
   const selectedChoices = product.optionGroups.flatMap((group) => group.choices).filter((choice) => choiceIds.includes(choice.id));
   const unitPrice = (variant?.priceRappen ?? 0) + selectedChoices.reduce((sum, choice) => sum + choice.priceDeltaRappen, 0);
+  const totalPrice = unitPrice + product.suggestedItems
+    .filter((item) => suggestedVariantIds.includes(item.variantId))
+    .reduce((sum, item) => sum + item.priceRappen, 0);
   const valid = product.optionGroups.every((group) => {
     const count = group.choices.filter((choice) => choiceIds.includes(choice.id)).length;
     return count >= group.minimumSelections && count <= group.maximumSelections;
@@ -299,8 +312,15 @@ function ProductCard({
       if (current.includes(choiceId)) return current.filter((id) => id !== choiceId);
       const groupIds = group.choices.map((choice) => choice.id);
       if (group.maximumSelections === 1) return [...current.filter((id) => !groupIds.includes(id)), choiceId];
+      if (current.filter((id) => groupIds.includes(id)).length >= group.maximumSelections) return current;
       return [...current, choiceId];
     });
+  };
+
+  const resetSelections = () => {
+    setVariantId(product.variants[0]?.id ?? "");
+    setChoiceIds([]);
+    setSuggestedVariantIds([]);
   };
 
   const minPrice = Math.min(...product.variants.map((item) => item.priceRappen));
@@ -382,7 +402,7 @@ function ProductCard({
               {locale === "de" ? "Ausverkauft" : "Sold out"}
             </span>
           ) : (
-            <Dialog>
+            <Dialog open={open} onOpenChange={(nextOpen) => { setOpen(nextOpen); if (!nextOpen) resetSelections(); }}>
               <DialogTrigger asChild>
                 <Button size="compact" variant="secondary">
                   {locale === "de" ? "+ Hinzufügen" : "+ Add"}
@@ -430,18 +450,50 @@ function ProductCard({
                   {product.optionGroups.map((group) => (
                     <fieldset key={group.id} className="space-y-2">
                       <legend className="font-display text-sm font-bold text-primary">
-                        {group.name} {group.required && <span className="text-destructive">*</span>}
+                        {group.name} {group.minimumSelections > 0 && <span className="text-destructive">*</span>}
                       </legend>
                       <p className="text-xs text-muted">
                         {locale === "de"
                           ? `Wählen Sie ${group.minimumSelections}–${group.maximumSelections}`
                           : `Choose ${group.minimumSelections}–${group.maximumSelections}`}
                       </p>
-                      <div className="space-y-2">
-                        {group.choices.map((choice) => (
+                      {group.maximumSelections === 1 ? (
+                        <div className="space-y-2">
+                          {group.choices.map((choice) => (
+                            <label
+                              key={choice.id}
+                              className={`flex min-h-12 cursor-pointer items-center justify-between rounded-xl border p-3 text-sm font-medium transition-all ${
+                                choiceIds.includes(choice.id)
+                                  ? "border-secondary bg-secondary/10 font-bold text-primary"
+                                  : "border-border hover:bg-background"
+                              }`}
+                            >
+                              <span className="flex items-center gap-3">
+                                <input
+                                  type="radio"
+                                  name={`option-group-${group.id}`}
+                                  checked={choiceIds.includes(choice.id)}
+                                  onChange={() => toggleChoice(group, choice.id)}
+                                  className="h-4 w-4 accent-secondary"
+                                />
+                                <span>{choice.name}</span>
+                              </span>
+                              {choice.priceDeltaRappen !== 0 && (
+                                <span className="text-xs font-bold text-secondary">
+                                  +{formatChf(choice.priceDeltaRappen, locale)}
+                                </span>
+                              )}
+                            </label>
+                          ))}
+                        </div>
+                      ) : <div className="space-y-2">
+                        {group.choices.map((choice) => {
+                          const selectedCount = group.choices.filter((item) => choiceIds.includes(item.id)).length;
+                          const disabled = !choiceIds.includes(choice.id) && selectedCount >= group.maximumSelections;
+                          return (
                           <label
                             key={choice.id}
-                            className={`flex min-h-12 cursor-pointer items-center justify-between rounded-xl border p-3 text-sm font-medium transition-all ${
+                            className={`flex min-h-12 items-center justify-between rounded-xl border p-3 text-sm font-medium transition-all ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${
                               choiceIds.includes(choice.id)
                                 ? "border-secondary bg-secondary/10 font-bold text-primary"
                                 : "border-border hover:bg-background"
@@ -449,10 +501,10 @@ function ProductCard({
                           >
                             <div className="flex items-center gap-3">
                               <input
-                                type={group.maximumSelections === 1 ? "radio" : "checkbox"}
-                                name={`group-${group.id}`}
+                                type="checkbox"
                                 checked={choiceIds.includes(choice.id)}
                                 onChange={() => toggleChoice(group, choice.id)}
+                                disabled={disabled}
                                 className="h-4 w-4 accent-secondary"
                               />
                               <span>{choice.name}</span>
@@ -463,32 +515,71 @@ function ProductCard({
                               </span>
                             )}
                           </label>
+                        )})}
+                      </div>}
+                    </fieldset>
+                  ))}
+
+                  {product.suggestedItems.length > 0 && (
+                    <fieldset className="space-y-2">
+                      <legend className="font-display text-sm font-bold text-primary">
+                        {locale === "de" ? "Wird oft dazu bestellt" : "People also order"}
+                      </legend>
+                      <div className="space-y-2">
+                        {product.suggestedItems.map((item) => (
+                          <label key={item.variantId} className={`flex min-h-12 cursor-pointer items-center justify-between rounded-xl border p-3 text-sm font-medium transition-all ${suggestedVariantIds.includes(item.variantId) ? "border-secondary bg-secondary/10 font-bold text-primary" : "border-border hover:bg-background"}`}>
+                            <span className="flex items-center gap-3">
+                              <input
+                                type="checkbox"
+                                checked={suggestedVariantIds.includes(item.variantId)}
+                                onChange={() => setSuggestedVariantIds((current) => current.includes(item.variantId) ? current.filter((id) => id !== item.variantId) : [...current, item.variantId])}
+                                className="h-4 w-4 accent-secondary"
+                              />
+                              <span>{item.productName} <span className="text-xs text-muted">({item.variantName})</span></span>
+                            </span>
+                            <span className="font-bold">+{formatChf(item.priceRappen, locale)}</span>
+                          </label>
                         ))}
                       </div>
                     </fieldset>
-                  ))}
+                  )}
 
                   {/* Total & Add Button */}
                   <div className="flex items-center justify-between border-t border-border/80 pt-4">
                     <div>
                       <span className="block text-xs text-muted">{locale === "de" ? "Gesamtpreis" : "Total price"}</span>
-                      <strong className="font-display text-2xl font-bold text-primary">
-                        {formatChf(unitPrice, locale)}
+                      <strong className="font-display text-2xl font-bold text-primary" aria-live="polite">
+                        {formatChf(totalPrice, locale)}
                       </strong>
                     </div>
                     <DialogClose asChild>
                       <Button
                         disabled={!valid}
                         onClick={() =>
-                          add({
-                            variantId: variant.id,
-                            choiceIds,
-                            quantity: 1,
-                            productName: product.name,
-                            variantName: variant.name,
-                            unitPriceRappen: unitPrice,
-                            imageUrl: product.imageKey,
-                          })
+                          addMany([
+                            {
+                              variantId: variant.id,
+                              choiceIds,
+                              choiceNames: selectedChoices.map((choice) => choice.name),
+                              quantity: 1,
+                              productName: product.name,
+                              variantName: variant.name,
+                              unitPriceRappen: unitPrice,
+                              imageUrl: product.imageKey,
+                            },
+                            ...product.suggestedItems
+                              .filter((item) => suggestedVariantIds.includes(item.variantId))
+                              .map((item) => ({
+                                variantId: item.variantId,
+                                choiceIds: [],
+                                choiceNames: [],
+                                quantity: 1,
+                                productName: item.productName,
+                                variantName: item.variantName,
+                                unitPriceRappen: item.priceRappen,
+                                imageUrl: item.imageKey,
+                              })),
+                          ])
                         }
                       >
                         {locale === "de" ? "In den Warenkorb" : "Add to cart"}

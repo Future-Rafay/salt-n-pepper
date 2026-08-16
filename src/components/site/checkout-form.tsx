@@ -315,6 +315,7 @@ export function CheckoutForm({ locale, user }: { locale: "de" | "en"; user?: { n
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <span className="font-semibold text-foreground">{item.quantity}× {item.productName}</span>
                   <span className="block text-xs text-muted">{item.variantName}</span>
+                  {item.choiceNames && item.choiceNames.length > 0 && <span className="block text-xs text-muted">{item.choiceNames.join(", ")}</span>}
                 </div>
                 <strong className="shrink-0 font-bold text-primary">{formatChf(item.unitPriceRappen * item.quantity, locale)}</strong>
               </li>

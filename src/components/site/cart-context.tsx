@@ -6,6 +6,7 @@ export type CartItem = {
   key: string;
   variantId: string;
   choiceIds: string[];
+  choiceNames?: string[];
   quantity: number;
   productName: string;
   variantName: string;
@@ -15,7 +16,7 @@ export type CartItem = {
 
 type CartContextValue = {
   items: CartItem[];
-  add: (item: Omit<CartItem, "key">) => void;
+  addMany: (items: Omit<CartItem, "key">[]) => void;
   remove: (key: string) => void;
   setQuantity: (key: string, quantity: number) => void;
   clear: () => void;
@@ -47,7 +48,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<CartContextValue>(() => ({
     items,
-    add: (item) => setItems((current) => [...current, { ...item, key: crypto.randomUUID() }]),
+    addMany: (newItems) => setItems((current) => [
+      ...current,
+      ...newItems.map((item) => ({ ...item, key: crypto.randomUUID() })),
+    ]),
     remove: (key) => setItems((current) => current.filter((item) => item.key !== key)),
     setQuantity: (key, quantity) => setItems((current) => quantity < 1
       ? current.filter((item) => item.key !== key)

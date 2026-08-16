@@ -7,16 +7,16 @@ import { ZodError, z } from "zod";
 
 import { requireRole } from "@/server/auth/current-user";
 import {
-  AdminError, cancelOrder, deleteAvailabilityWindow, deletePostalCode, deleteScheduleEntity, refundOrder,
-  saveAvailabilityWindow, saveCategory, saveFulfillment, saveOpeningWindow, saveOptionChoice, saveOptionGroup,
+  AdminError, cancelOrder, deleteAvailabilityWindow, deletePostalCode, deleteProductSuggestion, deleteScheduleEntity, refundOrder,
+  saveAvailabilityWindow, saveCategory, saveFulfillment, saveOpeningWindow,
   savePostalCode, savePromo, saveServiceException, saveSiteSettings, saveZone, setStaffActive,
 } from "@/server/services/admin";
-import { deleteManagedMenuEntity, saveManagedProduct, saveManagedVariant } from "@/server/services/menu-admin";
+import { deleteManagedMenuEntity, saveManagedOptionChoice, saveManagedOptionGroup, saveManagedProduct, saveManagedProductSuggestion, saveManagedVariant } from "@/server/services/menu-admin";
 import { setProductAvailability } from "@/server/services/ordering";
 import { inviteStaff } from "@/server/services/staff-invitations";
 import {
   availabilityWindowSchema, cancelOrderSchema, categorySchema, fulfillmentSchema, openingWindowSchema,
-  optionChoiceSchema, optionGroupSchema, postalCodeSchema, productSchema, promoSchema, refundSchema,
+  optionChoiceSchema, optionGroupSchema, postalCodeSchema, productSchema, productSuggestionSchema, promoSchema, refundSchema,
   serviceExceptionSchema, siteSettingsSchema, variantSchema, zoneSchema,
 } from "@/server/validators/admin";
 import { inviteStaffSchema } from "@/server/validators/staff-invitation";
@@ -60,11 +60,13 @@ export async function adminAction(formData: FormData) {
       case "category": await saveCategory(actor.id, categorySchema.parse(input)); break;
       case "product": await saveManagedProduct(actor.id, productSchema.parse(input)); break;
       case "variant": await saveManagedVariant(actor.id, variantSchema.parse(input)); break;
-      case "option_group": await saveOptionGroup(actor.id, optionGroupSchema.parse(input)); break;
-      case "option_choice": await saveOptionChoice(actor.id, optionChoiceSchema.parse(input)); break;
+      case "option_group": await saveManagedOptionGroup(actor.id, optionGroupSchema.parse(input)); break;
+      case "option_choice": await saveManagedOptionChoice(actor.id, optionChoiceSchema.parse(input)); break;
+      case "product_suggestion": await saveManagedProductSuggestion(actor.id, productSuggestionSchema.parse(input)); break;
       case "availability_window": await saveAvailabilityWindow(actor.id, availabilityWindowSchema.parse(input)); break;
       case "delete_menu": await deleteManagedMenuEntity(actor.id, menuKindSchema.parse(input.kind), idSchema.parse(input.id)); break;
       case "delete_availability_window": await deleteAvailabilityWindow(actor.id, idSchema.parse(input.id)); break;
+      case "delete_product_suggestion": await deleteProductSuggestion(actor.id, idSchema.parse(input.id)); break;
       case "product_availability": await setProductAvailability(idSchema.parse(input.id), input.available === "true", actor.id); break;
       case "fulfillment": await saveFulfillment(actor.id, fulfillmentSchema.parse(input)); break;
       case "opening_window": await saveOpeningWindow(actor.id, openingWindowSchema.parse(input)); break;

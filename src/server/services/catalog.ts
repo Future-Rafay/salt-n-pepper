@@ -85,6 +85,21 @@ export async function getPublicMenu(locale: Locale, at = new Date()) {
             include: { choices: { where: { active: true, deletedAt: null }, orderBy: { sortOrder: "asc" } } },
           },
           availabilityWindows: true,
+          suggestions: {
+            orderBy: { sortOrder: "asc" },
+            include: {
+              suggestedVariant: {
+                include: {
+                  product: {
+                    include: {
+                      availabilityWindows: true,
+                      optionGroups: { where: { active: true, deletedAt: null } },
+                    },
+                  },
+                },
+              },
+            },
+          },
           allergens: { include: { allergen: true } },
         },
       },
@@ -125,10 +140,38 @@ export async function getPublicMenu(locale: Locale, at = new Date()) {
           name: locale === "DE" ? variant.nameDe : variant.nameEn,
           priceRappen: variant.priceRappen,
         })),
+        suggestedItems: product.suggestions.flatMap(({ suggestedVariant }) => {
+          const suggestedProduct = suggestedVariant.product;
+          const timedAvailable =
+            suggestedProduct.availabilityWindows.length === 0 ||
+            suggestedProduct.availabilityWindows.some(
+              (window) =>
+                window.weekday === current.weekday &&
+                current.minute >= window.startMinute &&
+                current.minute < window.endMinute,
+            );
+          if (
+            !suggestedVariant.active ||
+            suggestedVariant.deletedAt ||
+            !suggestedProduct.active ||
+            suggestedProduct.deletedAt ||
+            !suggestedProduct.available ||
+            !timedAvailable ||
+            suggestedProduct.optionGroups.some((group) => group.minimumSelections > 0)
+          ) return [];
+          return [{
+            productId: suggestedProduct.id,
+            productName: locale === "DE" ? suggestedProduct.nameDe : suggestedProduct.nameEn,
+            variantId: suggestedVariant.id,
+            variantName: locale === "DE" ? suggestedVariant.nameDe : suggestedVariant.nameEn,
+            priceRappen: suggestedVariant.priceRappen,
+            imageKey: resolvePublicImageUrl(suggestedProduct.imageKey),
+          }];
+        }),
         optionGroups: product.optionGroups.map((group) => ({
           id: group.id,
           name: locale === "DE" ? group.nameDe : group.nameEn,
-          required: group.required,
+          required: group.minimumSelections > 0,
           minimumSelections: group.minimumSelections,
           maximumSelections: group.maximumSelections,
           choices: group.choices.map((choice) => ({

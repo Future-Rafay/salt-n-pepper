@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { openingWindowSchema, optionGroupSchema, postalCodeSchema, productSchema, promoSchema, refundSchema } from "@/server/validators/admin";
+import { openingWindowSchema, optionGroupSchema, postalCodeSchema, productSchema, productSuggestionSchema, promoSchema, refundSchema } from "@/server/validators/admin";
 
 test("Phase 4 admin trust boundaries reject unsafe schedule, promo, and refund input", () => {
   assert.equal(openingWindowSchema.safeParse({ fulfillmentType: "DELIVERY", weekday: "MONDAY", startMinute: 900, endMinute: 800, active: "on", sortOrder: 0 }).success, false);
@@ -14,6 +14,8 @@ test("admin form decoding accepts omitted checkboxes and fixture IDs", () => {
   assert.equal(product.active, false);
   assert.equal(product.isVegetarian, false);
   assert.equal(optionGroupSchema.parse({ productId: "mock-product-1", nameDe: "Sauce", nameEn: "Sauce", minimumSelections: "0", maximumSelections: "1", sortOrder: "0" }).required, false);
+  assert.equal(optionGroupSchema.parse({ productId: "mock-product-1", nameDe: "Drink", nameEn: "Drink", minimumSelections: "1", maximumSelections: "1", sortOrder: "0" }).required, true);
+  assert.equal(productSuggestionSchema.parse({ productId: "mock-product-1", suggestedVariantId: "mock-variant-2", sortOrder: "2" }).sortOrder, 2);
   assert.equal(promoSchema.parse({ code: "SAVE10", type: "PERCENT", value: "10", minimumSubtotalRappen: "25.00", startsAt: "", endsAt: "", totalUsageLimit: "", perCustomerLimit: "" }).value, 1000);
   assert.equal(postalCodeSchema.parse({ deliveryZoneId: "mock-zone-1", postalCode: "8304" }).deliveryZoneId, "mock-zone-1");
 });

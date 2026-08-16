@@ -64,7 +64,7 @@ export default async function ProductsPage({
               <ImageUploadField />
               <Field label="Sort order" name="sortOrder" type="number" min="0" defaultValue="0" required />
               <div className="flex flex-wrap gap-5">
-                <Check label="Published" name="active" defaultChecked />
+                <Check label="Published" name="active" />
                 <Check label="Available" name="available" defaultChecked />
                 <Check label="Halal" name="isHalal" />
               </div>

@@ -275,6 +275,7 @@ model Product {
   variants            ProductVariant[]
   optionGroups        OptionGroup[]
   availabilityWindows ProductAvailabilityWindow[]
+  suggestions         ProductSuggestion[]
   allergens           ProductAllergen[]
   orderItems          OrderItem[]
 
@@ -296,10 +297,27 @@ model ProductVariant {
   createdAt    DateTime    @default(now())
   updatedAt    DateTime    @updatedAt
   product      Product     @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductVariant_productId_fkey")
+  suggestedFor ProductSuggestion[]
   orderItems   OrderItem[]
 
   @@index([productId, deletedAt, active, sortOrder], map: "ProductVariant_productId_deletedAt_active_sortOrder_idx")
   @@map("productvariant")
+}
+
+model ProductSuggestion {
+  id                 String         @id @default(cuid())
+  productId          String
+  suggestedVariantId String
+  sortOrder          Int            @default(0)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  product            Product        @relation(fields: [productId], references: [id], onDelete: Cascade, map: "ProductSuggestion_productId_fkey")
+  suggestedVariant   ProductVariant @relation(fields: [suggestedVariantId], references: [id], onDelete: Restrict, map: "ProductSuggestion_suggestedVariantId_fkey")
+
+  @@unique([productId, suggestedVariantId], map: "ProductSuggestion_productId_suggestedVariantId_key")
+  @@index([productId, sortOrder], map: "ProductSuggestion_productId_sortOrder_idx")
+  @@index([suggestedVariantId], map: "ProductSuggestion_suggestedVariantId_idx")
+  @@map("productsuggestion")
 }
 
 model OptionGroup {
