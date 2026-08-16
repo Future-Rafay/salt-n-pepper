@@ -17,8 +17,9 @@
 3. Rebranded the admin shell, staff emails, order labels, auth, and shared settings without changing proven authorization, ordering, payment, or refund rules.
 4. Rebranded the React Native staff app, receipt header, native application identity, storage keys, and production API URL.
 5. Replaced the inherited migration history with a clean Prisma baseline for the new `saltnpepper_dev` schema.
-6. Added a provisional bilingual Pakistani grill catalog, daily service hours, the 8154 delivery offer, and licensed representative product photography stored under the public `SaltNPepper/` S3 prefix.
+6. Added a provisional bilingual Pakistani grill catalog, including Raita/Salad suggestion fixtures and a Biryani drink-choice fixture, daily service hours, the 8154 delivery offer, and licensed representative product photography stored under the public `SaltNPepper/` S3 prefix.
 7. Added the contact-page Google Map, database-backed hours and delivery announcement, Foodeez social destinations, site-wide WhatsApp access, and localized SweetNSavour-powered blog pages.
+8. Added admin-configurable per-product suggested variants and customer option selection, with suggestions added as independent cart/order lines and server-authoritative live pricing and availability.
 
 ## Production blockers
 
