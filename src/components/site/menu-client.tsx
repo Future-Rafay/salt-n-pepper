@@ -458,59 +458,59 @@ function ProductCard({
                           : `Choose ${group.minimumSelections}–${group.maximumSelections}`}
                       </p>
                       {group.maximumSelections === 1 ? (
-                        <div className="space-y-2">
+                        <div className="flex flex-wrap gap-2">
                           {group.choices.map((choice) => (
                             <label
                               key={choice.id}
-                              className={`flex min-h-12 cursor-pointer items-center justify-between rounded-xl border p-3 text-sm font-medium transition-all ${
+                              className={`flex min-h-10 max-w-full cursor-pointer items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all ${
                                 choiceIds.includes(choice.id)
                                   ? "border-secondary bg-secondary/10 font-bold text-primary"
                                   : "border-border hover:bg-background"
                               }`}
                             >
-                              <span className="flex items-center gap-3">
+                              <span className="flex items-center gap-2 min-w-0">
                                 <input
                                   type="radio"
                                   name={`option-group-${group.id}`}
                                   checked={choiceIds.includes(choice.id)}
                                   onChange={() => toggleChoice(group, choice.id)}
-                                  className="h-4 w-4 accent-secondary"
+                                  className="h-4 w-4 accent-secondary shrink-0"
                                 />
-                                <span>{choice.name}</span>
+                                <span className="truncate">{choice.name}</span>
                               </span>
                               {choice.priceDeltaRappen !== 0 && (
-                                <span className="text-xs font-bold text-secondary">
+                                <span className="shrink-0 text-xs font-bold text-secondary">
                                   +{formatChf(choice.priceDeltaRappen, locale)}
                                 </span>
                               )}
                             </label>
                           ))}
                         </div>
-                      ) : <div className="space-y-2">
+                      ) : <div className="flex flex-wrap gap-2">
                         {group.choices.map((choice) => {
                           const selectedCount = group.choices.filter((item) => choiceIds.includes(item.id)).length;
                           const disabled = !choiceIds.includes(choice.id) && selectedCount >= group.maximumSelections;
                           return (
                           <label
                             key={choice.id}
-                            className={`flex min-h-12 items-center justify-between rounded-xl border p-3 text-sm font-medium transition-all ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${
+                            className={`flex min-h-10 max-w-full items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition-all ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"} ${
                               choiceIds.includes(choice.id)
                                 ? "border-secondary bg-secondary/10 font-bold text-primary"
                                 : "border-border hover:bg-background"
                             }`}
                           >
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2 min-w-0">
                               <input
                                 type="checkbox"
                                 checked={choiceIds.includes(choice.id)}
                                 onChange={() => toggleChoice(group, choice.id)}
                                 disabled={disabled}
-                                className="h-4 w-4 accent-secondary"
+                                className="h-4 w-4 accent-secondary shrink-0"
                               />
-                              <span>{choice.name}</span>
+                              <span className="truncate">{choice.name}</span>
                             </div>
                             {choice.priceDeltaRappen !== 0 && (
-                              <span className="text-xs font-bold text-secondary">
+                              <span className="shrink-0 text-xs font-bold text-secondary">
                                 +{formatChf(choice.priceDeltaRappen, locale)}
                               </span>
                             )}
