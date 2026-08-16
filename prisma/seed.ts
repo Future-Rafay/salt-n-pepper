@@ -10,6 +10,9 @@ const ownerPassword = process.env.OWNER_PASSWORD;
 const ownerName = process.env.OWNER_NAME?.trim() || "SaltNPepper Owner";
 
 if (!databaseUrl) throw new Error("DATABASE_URL is required.");
+if (new URL(databaseUrl).pathname.replace(/^\/+/, "") !== "saltnpepper_dev") {
+  throw new Error("Seed refused: DATABASE_URL must target the lowercase saltnpepper_dev database.");
+}
 if (!ownerEmail) throw new Error("OWNER_EMAIL is required.");
 if (!ownerPassword || ownerPassword.startsWith("replace-with")) {
   throw new Error("Set a real OWNER_PASSWORD before running the seed.");
@@ -57,6 +60,8 @@ const products = [
   { category: "rice-bread", slug: "chicken-biryani", nameDe: "Chicken Biryani", nameEn: "Chicken Biryani", descriptionDe: "Duftender Basmatireis mit gewürztem Poulet und Kräutern.", descriptionEn: "Fragrant basmati rice layered with spiced chicken and herbs.", imageKey: "SaltNPepper/products/chicken-biryani.jpg", priceRappen: 2250, vegetarian: false, vegan: false, halal: true, spiceLevel: "MEDIUM", allergens: [] },
   { category: "rice-bread", slug: "vegetable-biryani", nameDe: "Gemüse-Biryani", nameEn: "Vegetable Biryani", descriptionDe: "Aromatischer Basmatireis mit saisonalem Gemüse.", descriptionEn: "Aromatic basmati rice with seasonal vegetables.", imageKey: "SaltNPepper/products/vegetable-biryani.jpg", priceRappen: 1950, vegetarian: true, vegan: true, halal: false, spiceLevel: "MILD", allergens: [] },
   { category: "rice-bread", slug: "naan", nameDe: "Naan", nameEn: "Naan", descriptionDe: "Weiches, frisch gebackenes Fladenbrot.", descriptionEn: "Soft, freshly baked flatbread.", imageKey: "SaltNPepper/products/naan.jpg", priceRappen: 400, vegetarian: true, vegan: false, halal: false, spiceLevel: null, allergens: ["gluten", "milk"] },
+  { category: "rice-bread", slug: "raita", nameDe: "Raita", nameEn: "Raita", descriptionDe: "Kühlende Joghurtbeilage.", descriptionEn: "Cooling yogurt side.", imageKey: null, priceRappen: 200, vegetarian: true, vegan: false, halal: false, spiceLevel: null, allergens: ["milk"] },
+  { category: "rice-bread", slug: "salad", nameDe: "Salat", nameEn: "Salad", descriptionDe: "Frischer gemischter Salat.", descriptionEn: "Fresh mixed salad.", imageKey: null, priceRappen: 200, vegetarian: true, vegan: true, halal: false, spiceLevel: null, allergens: [] },
   { category: "drinks-desserts", slug: "mango-lassi", nameDe: "Mango Lassi", nameEn: "Mango Lassi", descriptionDe: "Cremiger Joghurt-Drink mit Mango.", descriptionEn: "A creamy yogurt drink blended with mango.", imageKey: "SaltNPepper/products/mango-lassi.jpg", priceRappen: 650, vegetarian: true, vegan: false, halal: false, spiceLevel: null, allergens: ["milk"] },
   { category: "drinks-desserts", slug: "gulab-jamun", nameDe: "Gulab Jamun", nameEn: "Gulab Jamun", descriptionDe: "Warme Milchteigbällchen in duftendem Zuckersirup.", descriptionEn: "Warm milk-dough dumplings in fragrant sugar syrup.", imageKey: "SaltNPepper/products/gulab-jamun.jpg", priceRappen: 750, vegetarian: true, vegan: false, halal: false, spiceLevel: null, allergens: ["gluten", "milk"] },
 ] as const;
@@ -141,6 +146,8 @@ async function main() {
   const allergenRows = await prisma.allergen.findMany({ select: { id: true, code: true } });
   const allergenIds = new Map(allergenRows.map(({ id, code }) => [code, id]));
   const categoryIds = new Map<string, string>();
+  const productIds = new Map<string, string>();
+  const variantIds = new Map<string, string>();
 
   for (const [sortOrder, category] of categories.entries()) {
     const row = await prisma.category.upsert({
@@ -190,12 +197,14 @@ async function main() {
         deletedAt: null,
       },
     });
+    productIds.set(product.slug, row.id);
 
-    await prisma.productVariant.upsert({
+    const variant = await prisma.productVariant.upsert({
       where: { sku: `SNP-${product.slug.toUpperCase()}` },
       create: { productId: row.id, sku: `SNP-${product.slug.toUpperCase()}`, nameDe: "Standard", nameEn: "Standard", priceRappen: product.priceRappen },
       update: { productId: row.id, nameDe: "Standard", nameEn: "Standard", priceRappen: product.priceRappen, active: true, deletedAt: null },
     });
+    variantIds.set(product.slug, variant.id);
 
     await prisma.productAllergen.deleteMany({ where: { productId: row.id } });
     if (product.allergens.length > 0) {
@@ -208,6 +217,33 @@ async function main() {
       });
     }
   }
+
+  const chickenBiryaniId = productIds.get("chicken-biryani");
+  const raitaVariantId = variantIds.get("raita");
+  const saladVariantId = variantIds.get("salad");
+  if (!chickenBiryaniId || !raitaVariantId || !saladVariantId) throw new Error("Missing product-option seed fixtures.");
+
+  const drinkGroupId = "seed-chicken-biryani-drink";
+  await prisma.$transaction([
+    prisma.optionGroup.upsert({
+      where: { id: drinkGroupId },
+      create: { id: drinkGroupId, productId: chickenBiryaniId, nameDe: "Getränk wählen", nameEn: "Choose a drink", required: true, minimumSelections: 1, maximumSelections: 1, active: true, sortOrder: 0 },
+      update: { productId: chickenBiryaniId, nameDe: "Getränk wählen", nameEn: "Choose a drink", required: true, minimumSelections: 1, maximumSelections: 1, active: true, sortOrder: 0, deletedAt: null },
+    }),
+    ...[
+      ["pepsi", "Pepsi", "Pepsi"],
+      ["coca-cola", "Coca-Cola", "Coca-Cola"],
+    ].map(([key, nameDe, nameEn], sortOrder) => prisma.optionChoice.upsert({
+      where: { id: `seed-chicken-biryani-drink-${key}` },
+      create: { id: `seed-chicken-biryani-drink-${key}`, optionGroupId: drinkGroupId, nameDe, nameEn, priceDeltaRappen: 0, active: true, sortOrder },
+      update: { optionGroupId: drinkGroupId, nameDe, nameEn, priceDeltaRappen: 0, active: true, sortOrder, deletedAt: null },
+    })),
+    ...[raitaVariantId, saladVariantId].map((suggestedVariantId, sortOrder) => prisma.productSuggestion.upsert({
+      where: { productId_suggestedVariantId: { productId: chickenBiryaniId, suggestedVariantId } },
+      create: { productId: chickenBiryaniId, suggestedVariantId, sortOrder },
+      update: { sortOrder },
+    })),
+  ]);
 
   await prisma.$transaction([
     prisma.openingWindow.deleteMany(),
