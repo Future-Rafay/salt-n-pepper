@@ -50,7 +50,12 @@ No Phase 5 schema change is required. The two committed migrations remain immuta
 3. Create the live webhook endpoint `https://saltnpepper.ch/api/webhooks/stripe` for:
 
    - `checkout.session.completed`
+   - `checkout.session.async_payment_succeeded`
+   - `checkout.session.async_payment_failed`
    - `checkout.session.expired`
+   - `refund.created`
+   - `refund.updated`
+   - `refund.failed`
 
 4. Store the endpoint signing secret as `STRIPE_WEBHOOK_SECRET`. Use the live secret key only in Production.
 5. Before DNS cutover, replay one signed fixture twice against the preview deployment and verify one `StripeWebhookEvent` row. Force that row to `FAILED` in the isolated test database, replay it, and verify it becomes `PROCESSED`.

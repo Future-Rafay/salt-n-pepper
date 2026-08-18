@@ -62,7 +62,7 @@ export async function getStaffAdminData() {
 const adminOrderInclude = {
   address: true,
   items: { include: { options: true } },
-  payment: { include: { refunds: { orderBy: { createdAt: "desc" as const } } } },
+  payment: { include: { refunds: { include: { requestedBy: { select: { name: true, email: true } } }, orderBy: { createdAt: "desc" as const } } } },
   statusEvents: { include: { actor: { select: { name: true, email: true } } }, orderBy: { createdAt: "asc" as const } },
 } satisfies Prisma.OrderInclude;
 

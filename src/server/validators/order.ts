@@ -6,11 +6,11 @@ const cartItemSchema = z.object({
   quantity: z.number().int().min(1).max(20),
 });
 
-const fulfillmentSchema = z.object({
+const fulfillmentFields = {
   fulfillmentType: z.enum(["DELIVERY", "PICKUP"]),
   scheduledFor: z.iso.datetime().nullable().optional(),
   postcode: z.string().trim().regex(/^\d{4}$/).optional(),
-});
+};
 
 export const deliveryQuoteSchema = z.object({
   postcode: z.string().trim().regex(/^\d{4}$/),
@@ -22,11 +22,20 @@ export const slotsQuerySchema = z.object({
   date: z.iso.date(),
 });
 
-export const quoteSchema = fulfillmentSchema.extend({
+const quoteSchemaBase = z.object({
+  ...fulfillmentFields,
   items: z.array(cartItemSchema).min(1).max(100),
   promoCode: z.string().trim().max(64).optional(),
   customerEmail: z.string().trim().email().transform((value) => value.toLowerCase()).optional(),
 });
+
+function requireDeliveryPostcode(input: { fulfillmentType: "DELIVERY" | "PICKUP"; postcode?: string }, context: z.RefinementCtx) {
+  if (input.fulfillmentType === "DELIVERY" && !input.postcode) {
+    context.addIssue({ code: "custom", path: ["postcode"], message: "Postcode is required for delivery" });
+  }
+}
+
+export const quoteSchema = quoteSchemaBase.superRefine(requireDeliveryPostcode);
 
 const addressSchema = z.object({
   recipientName: z.string().trim().min(2).max(160),
@@ -37,7 +46,7 @@ const addressSchema = z.object({
   city: z.string().trim().min(2).max(120),
 });
 
-export const createOrderSchema = quoteSchema.extend({
+export const createOrderSchema = quoteSchemaBase.extend({
   checkoutKey: z.uuid(),
   locale: z.enum(["de", "en"]),
   customerName: z.string().trim().min(2).max(160),
@@ -46,6 +55,20 @@ export const createOrderSchema = quoteSchema.extend({
   paymentMethod: z.enum(["STRIPE", "CASH_ON_DELIVERY", "PAY_AT_PICKUP"]),
   note: z.string().trim().max(1000).optional(),
   address: addressSchema.optional(),
+}).superRefine((input, context) => {
+  requireDeliveryPostcode(input, context);
+  if (input.fulfillmentType === "DELIVERY" && !input.address) {
+    context.addIssue({ code: "custom", path: ["address"], message: "Address is required for delivery" });
+  }
+  if (input.fulfillmentType === "DELIVERY" && input.address && input.postcode !== input.address.postalCode) {
+    context.addIssue({ code: "custom", path: ["address", "postalCode"], message: "Address postcode must match delivery postcode" });
+  }
+  if (
+    (input.fulfillmentType === "DELIVERY" && input.paymentMethod === "PAY_AT_PICKUP")
+    || (input.fulfillmentType === "PICKUP" && input.paymentMethod === "CASH_ON_DELIVERY")
+  ) {
+    context.addIssue({ code: "custom", path: ["paymentMethod"], message: "Payment method is not valid for this fulfillment type" });
+  }
 });
 
 export type QuoteInput = z.infer<typeof quoteSchema>;

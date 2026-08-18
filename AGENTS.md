@@ -32,6 +32,8 @@ This is the standalone SaltNPepper restaurant website, admin panel, backend API,
 - `src/server/db.ts` is the only Prisma client constructor; `prisma/schema.prisma` is the schema source of truth.
 - Ordering rules stay in `src/server/services/ordering.ts`; admin rules stay in `src/server/services/admin.ts`.
 - Public web and versioned mobile routes must call shared server services instead of duplicating pricing, authorization, availability, payment, or transition rules.
+- Customer notification/history surfaces consume the explicit activities returned by the ordering DTO; do not infer status events from `Order.updatedAt`.
+- Staff order queues sort by `Order.updatedAt` latest-first. Payment mutations that count as order activity must touch the order in the same transaction.
 - Product suggestions pin one target `ProductVariant`, are configured in admin, and reach checkout as ordinary independent cart/order lines; public pricing and orderability remain server-authoritative.
 - Validate trust boundaries with shared schemas and return explicit DTOs.
 - Use integer CHF rappen, UTC storage, and `Europe/Zurich` display/calculation.
@@ -43,7 +45,7 @@ This is the standalone SaltNPepper restaurant website, admin panel, backend API,
 - Prisma owns tables and indexes. Local work uses `prisma migrate dev`; preview/production uses committed `prisma migrate deploy`.
 - Never edit a migration already deployed outside disposable local development; create a forward migration.
 - Keep network calls outside long database transactions.
-- Stripe webhooks are authoritative and signature verified. S3 writes are server-authorized. Secrets remain server-only.
+- Stripe webhooks are authoritative and signature verified. Paid checkout finalization handles both immediate `checkout.session.completed` and delayed `checkout.session.async_payment_succeeded` events through the same idempotent service path; the authorized order tracker may reconcile a still-pending saved Checkout Session through that same finalizer. Stripe identifiers belong on `Payment`, and refund actor/provider data belongs on `Refund`, not `Order`. S3 writes are server-authorized. Secrets remain server-only.
 
 ## UI and safety
 

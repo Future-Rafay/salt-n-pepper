@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { allocateDiscount, assertOptionCount, formatOrderNumber, nextOrderStatus, promoDiscount, publicOrderAddress } from "@/lib/orders";
+import { allocateDiscount, assertOptionCount, formatOrderNumber, nextOrderStatus, orderStatusLabel, promoDiscount, publicOrderAddress } from "@/lib/orders";
 import { zurichDateToUtc, zurichParts } from "@/lib/zurich-time";
 
 test("order money and lifecycle rules stay server-shaped", () => {
@@ -10,6 +10,8 @@ test("order money and lifecycle rules stay server-shaped", () => {
   assert.equal(promoDiscount(300, { type: "FIXED", value: 500, minimumSubtotalRappen: 0 }), 300);
   assert.equal(nextOrderStatus("PREPARING", "PICKUP"), "READY_FOR_PICKUP");
   assert.equal(nextOrderStatus("PREPARING", "DELIVERY"), "OUT_FOR_DELIVERY");
+  assert.equal(orderStatusLabel("OUT_FOR_DELIVERY", "en"), "Out for delivery");
+  assert.equal(orderStatusLabel("OUT_FOR_DELIVERY", "de"), "Unterwegs");
   assert.equal(nextOrderStatus("COMPLETED", "DELIVERY"), null);
   assert.equal(assertOptionCount({ minimumSelections: 1, maximumSelections: 2 }, 2), true);
   assert.equal(assertOptionCount({ minimumSelections: 1, maximumSelections: 2 }, 3), false);

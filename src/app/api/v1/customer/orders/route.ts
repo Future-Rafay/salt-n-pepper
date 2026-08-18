@@ -16,6 +16,6 @@ export async function POST(request: Request) {
 
 export async function GET() {
   const user = await getCurrentUser();
-  if (!user || user.role !== "CUSTOMER") return Response.json({ error: "FORBIDDEN" }, { status: 403 });
+  if (!user || !["CUSTOMER", "OWNER"].includes(user.role)) return Response.json({ error: "FORBIDDEN" }, { status: 403 });
   return Response.json({ orders: await getCustomerOrders(user.id) });
 }

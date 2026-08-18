@@ -134,12 +134,12 @@ export async function calculateQuote(input: QuoteInput, db: Db = prisma, userId?
   });
 
   const subtotalRappen = items.reduce((sum, item) => sum + item.lineSubtotalRappen, 0);
-  const promo = await findPromo(db, input.promoCode, input.customerEmail, userId);
-  const discountRappen = promoDiscount(subtotalRappen, promo);
   const delivery = input.fulfillmentType === "DELIVERY"
     ? await getDeliveryQuote(input.postcode ?? "", subtotalRappen, db)
     : null;
   if (delivery && !delivery.eligible) throw new OrderError("DELIVERY_MINIMUM_NOT_MET");
+  const promo = await findPromo(db, input.promoCode, input.customerEmail, userId);
+  const discountRappen = promoDiscount(subtotalRappen, promo);
   const deliveryFeeRappen = delivery?.deliveryFeeRappen ?? 0;
   return {
     items,
@@ -215,15 +215,39 @@ function createdOrderDto(order: { id: bigint; status: OrderStatus; totalRappen: 
   return { orderNumber: formatOrderNumber(order.id), status: order.status, totalRappen: order.totalRappen, trackingToken };
 }
 
-async function failPendingOrder(orderId: bigint) {
+type StripeOrder = Prisma.OrderGetPayload<{ include: { payment: true } }>;
+
+function stripeOrderId(session: Stripe.Checkout.Session) {
+  const value = session.metadata?.orderId;
+  if (!value || !/^\d+$/.test(value)) throw new OrderError("STRIPE_EVENT_INVALID");
+  return BigInt(value);
+}
+
+function assertStripeSession(order: StripeOrder, session: Stripe.Checkout.Session) {
+  if (
+    order.payment?.provider !== "STRIPE"
+    || order.payment.stripeCheckoutSessionId !== session.id
+    || session.currency !== "chf"
+    || session.amount_total !== order.payment.amountRappen
+    || session.metadata?.orderNumber !== formatOrderNumber(order.id)
+  ) throw new OrderError("STRIPE_EVENT_INVALID");
+}
+
+async function failPendingOrder(orderId: bigint, reason = "PAYMENT_SESSION_FAILED", session?: Stripe.Checkout.Session) {
   await prisma.$transaction(async (tx) => {
-    const order = await tx.order.findUniqueOrThrow({ where: { id: orderId } });
+    const order = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { payment: true } });
+    if (session) assertStripeSession(order, session);
     if (order.status !== "PAYMENT_PENDING") return;
-    await tx.order.update({
-      where: { id: orderId },
-      data: { status: "CANCELLED", cancelledAt: new Date(), cancellationReason: "PAYMENT_SESSION_FAILED" },
+    const now = new Date();
+    const cancellation = await tx.order.updateMany({
+      where: { id: orderId, status: "PAYMENT_PENDING" },
+      data: { status: "CANCELLED", version: { increment: 1 }, cancelledAt: now, cancellationReason: reason },
     });
-    await tx.payment.update({ where: { orderId }, data: { status: "FAILED", failedAt: new Date() } });
+    if (cancellation.count !== 1) return;
+    await tx.payment.update({ where: { orderId }, data: { status: "FAILED", failedAt: now } });
+    await tx.orderStatusEvent.create({
+      data: { orderId, fromStatus: "PAYMENT_PENDING", toStatus: "CANCELLED", reason },
+    });
     if (order.slotId) {
       await tx.fulfillmentSlot.update({ where: { id: order.slotId }, data: { bookedCount: { decrement: 1 } } });
     }
@@ -391,47 +415,53 @@ async function claimStripeEvent(event: Stripe.Event) {
   }
 }
 
+async function validateStripeSession(session: Stripe.Checkout.Session) {
+  const order = await prisma.order.findUniqueOrThrow({ where: { id: stripeOrderId(session) }, include: { payment: true } });
+  assertStripeSession(order, session);
+}
+
+async function finalizePaidStripeSession(session: Stripe.Checkout.Session) {
+  if (session.payment_status !== "paid") throw new OrderError("STRIPE_EVENT_INVALID");
+  return prisma.$transaction(async (tx) => {
+    const orderId = stripeOrderId(session);
+    const current = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { payment: true } });
+    assertStripeSession(current, session);
+    if (current.status !== "PAYMENT_PENDING") {
+      if (current.payment?.status !== "PAID") throw new OrderError("STRIPE_EVENT_INVALID");
+      return null;
+    }
+    const now = new Date();
+    const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+    if (!paymentIntentId) throw new OrderError("STRIPE_EVENT_INVALID");
+    const payment = await tx.payment.updateMany({
+      where: { orderId, status: "PENDING" },
+      data: { status: "PAID", stripePaymentIntentId: paymentIntentId, paidAt: now },
+    });
+    if (payment.count !== 1) throw new OrderError("STRIPE_EVENT_INVALID");
+    await tx.orderStatusEvent.create({
+      data: { orderId, fromStatus: "PAYMENT_PENDING", toStatus: "CONFIRMED", reason: "STRIPE_PAID" },
+    });
+    return tx.order.update({ where: { id: orderId }, data: { status: "CONFIRMED", version: { increment: 1 } } });
+  });
+}
+
 export async function processStripeEvent(event: Stripe.Event) {
   if (!(await claimStripeEvent(event))) return;
 
+  let confirmedOrder: Awaited<ReturnType<typeof finalizePaidStripeSession>> = null;
   try {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
-      const orderId = session.metadata?.orderId ? BigInt(session.metadata.orderId) : null;
-      if (!orderId || session.payment_status !== "paid") throw new OrderError("STRIPE_EVENT_INVALID");
-      const order = await prisma.$transaction(async (tx) => {
-        const current = await tx.order.findUniqueOrThrow({ where: { id: orderId }, include: { payment: true } });
-        if (
-          current.payment?.provider !== "STRIPE"
-          || current.payment.stripeCheckoutSessionId !== session.id
-          || session.currency !== "chf"
-          || session.amount_total !== current.payment.amountRappen
-          || session.metadata?.orderNumber !== formatOrderNumber(current.id)
-        ) {
-          throw new OrderError("STRIPE_EVENT_INVALID");
-        }
-        if (current.status !== "PAYMENT_PENDING") return current;
-        const paymentIntentId = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
-        await tx.payment.update({
-          where: { orderId },
-          data: { status: "PAID", stripePaymentIntentId: paymentIntentId, paidAt: new Date() },
-        });
-        await tx.orderStatusEvent.create({
-          data: { orderId, fromStatus: "PAYMENT_PENDING", toStatus: "CONFIRMED", reason: "STRIPE_PAID" },
-        });
-        return tx.order.update({ where: { id: orderId }, data: { status: "CONFIRMED", version: { increment: 1 } } });
-      });
-      await sendOrderNotification(
-        order.id,
-        "confirmed",
-        order.customerEmail,
-        orderConfirmationEmail({ orderNumber: formatOrderNumber(order.id) }),
-      );
-    } else if (event.type === "checkout.session.expired" && event.data.object.metadata?.orderId) {
-      const orderId = BigInt(event.data.object.metadata.orderId);
-      const payment = await prisma.payment.findUnique({ where: { orderId }, select: { stripeCheckoutSessionId: true } });
-      if (payment?.stripeCheckoutSessionId !== event.data.object.id) throw new OrderError("STRIPE_EVENT_INVALID");
-      await failPendingOrder(orderId);
+      if (session.payment_status === "paid") confirmedOrder = await finalizePaidStripeSession(session);
+      else await validateStripeSession(session);
+    } else if (event.type === "checkout.session.async_payment_succeeded") {
+      confirmedOrder = await finalizePaidStripeSession(event.data.object);
+    } else if (event.type === "checkout.session.async_payment_failed") {
+      const session = event.data.object;
+      await failPendingOrder(stripeOrderId(session), "STRIPE_PAYMENT_FAILED", session);
+    } else if (event.type === "checkout.session.expired") {
+      const session = event.data.object;
+      await failPendingOrder(stripeOrderId(session), "PAYMENT_SESSION_EXPIRED", session);
     } else if (event.type === "refund.created" || event.type === "refund.updated" || event.type === "refund.failed") {
       await syncStripeRefund(event.data.object);
     }
@@ -446,6 +476,19 @@ export async function processStripeEvent(event: Stripe.Event) {
     });
     throw error;
   }
+
+  if (confirmedOrder) {
+    try {
+      await sendOrderNotification(
+        confirmedOrder.id,
+        "confirmed",
+        confirmedOrder.customerEmail,
+        orderConfirmationEmail({ orderNumber: formatOrderNumber(confirmedOrder.id) }),
+      );
+    } catch {
+      // Payment is authoritative; notification delivery must not make Stripe retry a processed event.
+    }
+  }
 }
 
 const orderInclude = {
@@ -455,7 +498,28 @@ const orderInclude = {
   statusEvents: { orderBy: { createdAt: "asc" as const } },
 } satisfies Prisma.OrderInclude;
 
+type OrderActivity =
+  | { id: string; kind: "ORDER_STATUS"; status: OrderStatus; at: string; reason: string | null }
+  | { id: string; kind: "CASH_PAYMENT_CONFIRMED"; paymentStatus: "PAID"; at: string };
+
 function orderDto(order: Prisma.OrderGetPayload<{ include: typeof orderInclude }>) {
+  const activities: OrderActivity[] = order.statusEvents.map((event) => ({
+    id: event.id,
+    kind: "ORDER_STATUS",
+    status: event.toStatus,
+    at: event.createdAt.toISOString(),
+    reason: event.reason,
+  }));
+  if (order.payment?.provider === "CASH" && order.payment.paidAt) {
+    activities.push({
+      id: `cash-paid-${order.payment.id}`,
+      kind: "CASH_PAYMENT_CONFIRMED",
+      paymentStatus: "PAID",
+      at: order.payment.paidAt.toISOString(),
+    });
+  }
+  activities.sort((a, b) => b.at.localeCompare(a.at));
+
   return {
     orderNumber: formatOrderNumber(order.id),
     locale: order.locale.toLowerCase(),
@@ -476,6 +540,8 @@ function orderDto(order: Prisma.OrderGetPayload<{ include: typeof orderInclude }
     version: order.version,
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
+    activityAt: activities[0]?.at ?? order.createdAt.toISOString(),
+    activities,
     address: publicOrderAddress(order.address),
     items: order.items.map((item) => ({
       id: item.id,
@@ -494,8 +560,22 @@ function orderDto(order: Prisma.OrderGetPayload<{ include: typeof orderInclude }
 export async function getTrackedOrder(orderNumber: string, userId?: string, token?: string) {
   const id = parseOrderNumber(orderNumber);
   if (!id) return null;
-  const order = await prisma.order.findUnique({ where: { id }, include: orderInclude });
+  let order = await prisma.order.findUnique({ where: { id }, include: orderInclude });
   if (!order || (order.userId !== userId && (!token || order.guestTrackingTokenHash !== hashToken(token)))) return null;
+  if (order.status === "PAYMENT_PENDING" && order.payment?.provider === "STRIPE" && order.payment.stripeCheckoutSessionId) {
+    try {
+      const session = await getStripe().checkout.sessions.retrieve(order.payment.stripeCheckoutSessionId);
+      if (session.payment_status === "paid") {
+        const confirmedOrder = await finalizePaidStripeSession(session);
+        order = await prisma.order.findUniqueOrThrow({ where: { id }, include: orderInclude });
+        if (confirmedOrder) {
+          await sendOrderNotification(confirmedOrder.id, "confirmed", confirmedOrder.customerEmail, orderConfirmationEmail({ orderNumber }));
+        }
+      }
+    } catch (error) {
+      console.error("Stripe checkout reconciliation failed", { orderNumber, error });
+    }
+  }
   return orderDto(order);
 }
 
@@ -503,7 +583,7 @@ export async function getCustomerOrders(userId: string) {
   const orders = await prisma.order.findMany({
     where: { userId },
     include: orderInclude,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ updatedAt: "desc" }, { id: "desc" }],
     take: 50,
   });
   return orders.map(orderDto);
@@ -565,7 +645,9 @@ export async function confirmCashPayment(orderNumber: string, actorUserId: strin
     if (payment.provider !== "CASH" || payment.status !== "PENDING") {
       throw new OrderError("CASH_CONFIRMATION_NOT_ALLOWED");
     }
-    await tx.payment.update({ where: { orderId: id }, data: { status: "PAID", paidAt: new Date() } });
+    const now = new Date();
+    await tx.payment.update({ where: { orderId: id }, data: { status: "PAID", paidAt: now } });
+    await tx.order.update({ where: { id }, data: { version: { increment: 1 }, updatedAt: now } });
     await tx.auditLog.create({
       data: { actorUserId, action: "CASH_PAYMENT_CONFIRMED", entityType: "Order", entityId: id.toString() },
     });

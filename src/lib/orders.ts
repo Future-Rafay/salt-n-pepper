@@ -2,6 +2,16 @@ import { createHash } from "node:crypto";
 
 import type { FulfillmentType, OrderStatus, PromoType } from "@/generated/prisma/enums";
 
+const orderStatusLabels: Record<OrderStatus, { de: string; en: string }> = {
+  PAYMENT_PENDING: { de: "Zahlungsbestätigung läuft", en: "Confirming payment" },
+  CONFIRMED: { de: "Bestätigt", en: "Confirmed" },
+  PREPARING: { de: "In Zubereitung", en: "Preparing" },
+  READY_FOR_PICKUP: { de: "Abholbereit", en: "Ready for pickup" },
+  OUT_FOR_DELIVERY: { de: "Unterwegs", en: "Out for delivery" },
+  COMPLETED: { de: "Abgeschlossen", en: "Completed" },
+  CANCELLED: { de: "Storniert", en: "Cancelled" },
+};
+
 export function hashToken(value: string) {
   return createHash("sha256").update(value).digest("hex");
 }
@@ -20,6 +30,10 @@ export function formatChf(rappen: number, locale: "de" | "en" = "de") {
     style: "currency",
     currency: "CHF",
   }).format(rappen / 100);
+}
+
+export function orderStatusLabel(status: OrderStatus, locale: "de" | "en") {
+  return orderStatusLabels[status][locale];
 }
 
 export function formatChfInput(rappen: number) {
