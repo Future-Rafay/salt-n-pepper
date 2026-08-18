@@ -3,19 +3,6 @@ import type { Order, OrderStatus, PaymentStatus } from "./types.ts";
 export type Language = "de" | "en";
 export const DEFAULT_LANGUAGE: Language = "de";
 
-export const copy = {
-  de: {
-    newOrders: "Neue Bestellungen",
-    preparing: "In Zubereitung",
-    ready: "Bereit & Lieferung",
-  },
-  en: {
-    newOrders: "New orders",
-    preparing: "Preparing",
-    ready: "Ready & delivery",
-  },
-} as const;
-
 export function localizedSnapshot(de: string | null, en: string | null, language: Language) {
   return (language === "de" ? de || en : en || de) ?? "—";
 }
@@ -67,21 +54,23 @@ export function paymentStatusLabel(status: PaymentStatus | null, language: Langu
   return labels[status][language];
 }
 
+export function paymentMethodLabel(method: Order["paymentMethod"], language: Language) {
+  const labels: Record<Order["paymentMethod"], Record<Language, string>> = {
+    STRIPE: { de: "Karte / Online", en: "Card / online" },
+    CASH_ON_DELIVERY: { de: "Barzahlung bei Lieferung", en: "Cash on delivery" },
+    PAY_AT_PICKUP: { de: "Zahlung bei Abholung", en: "Pay at pickup" },
+  };
+  return labels[method][language];
+}
+
 export function totalItemQuantity(order: Pick<Order, "items">) {
   return order.items.reduce((total, item) => total + item.quantity, 0);
 }
 
-const workflows = [
-  { key: "new", titleKey: "newOrders", statuses: ["PAYMENT_PENDING", "CONFIRMED"] },
-  { key: "preparing", titleKey: "preparing", statuses: ["PREPARING"] },
-  { key: "ready", titleKey: "ready", statuses: ["READY_FOR_PICKUP", "OUT_FOR_DELIVERY"] },
-] as const;
-
-export function groupOrders(orders: Order[], language: Language) {
-  return workflows.flatMap((workflow) => {
-    const data = orders
-      .filter((order) => (workflow.statuses as readonly OrderStatus[]).includes(order.status))
-      .sort((a, b) => new Date(a.scheduledFor ?? a.createdAt).getTime() - new Date(b.scheduledFor ?? b.createdAt).getTime());
-    return data.length ? [{ key: workflow.key, title: copy[language][workflow.titleKey], data }] : [];
-  });
+export function sortOrdersByLatestActivity(orders: Order[]) {
+  return [...orders].sort((a, b) =>
+    Date.parse(b.updatedAt) - Date.parse(a.updatedAt)
+    || Date.parse(b.createdAt) - Date.parse(a.createdAt)
+    || b.orderNumber.localeCompare(a.orderNumber),
+  );
 }

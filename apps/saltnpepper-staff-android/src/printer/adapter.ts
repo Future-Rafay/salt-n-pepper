@@ -14,7 +14,7 @@ export type BondedPrinter = { name: string; address: string };
 type NativePrinterModule = {
   getBondedPrinters(): Promise<BondedPrinter[]>;
   printEscPos(address: string, receipt: string, paperWidth: PaperWidth, autoCut: boolean): Promise<void>;
-  printDocument(receipt: string, documentName: string): Promise<void>;
+  printDocument(receipt: string, documentName: string, paperWidth: PaperWidth): Promise<void>;
 };
 
 const nativePrinter = NativeModules.SaltNPepperPrinter as NativePrinterModule | undefined;
@@ -32,10 +32,10 @@ export async function getBondedPrinters() {
 
 export async function printReceipt(order: Order, config: PrinterConfig) {
   const payload = receiptToEscPosText(order, config.paperWidth);
-  if (!nativePrinter) return { ok: false, payload, message: "Printing is available only in the Android app. Use the receipt preview here." };
+  if (!nativePrinter) return { ok: false, payload, message: "Printing is available only in the Android app." };
   try {
     if (config.connection === "android-print-service") {
-      await nativePrinter.printDocument(payload, order.orderNumber);
+      await nativePrinter.printDocument(payload, order.orderNumber, config.paperWidth);
       return { ok: true, payload, message: "Android print preview opened." };
     }
     if (!config.address) return { ok: false, payload, message: "Select a paired Bluetooth printer in Settings first." };

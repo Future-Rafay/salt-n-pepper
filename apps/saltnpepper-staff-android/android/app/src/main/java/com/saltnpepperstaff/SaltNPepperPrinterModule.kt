@@ -61,7 +61,7 @@ class SaltNPepperPrinterModule(private val context: ReactApplicationContext) : R
           socket.outputStream.use { output ->
             output.write(byteArrayOf(0x1B, 0x40))
             output.write(receipt.toByteArray(Charset.forName("CP437")))
-            output.write(byteArrayOf(0x0A, 0x0A, 0x0A))
+            output.write(byteArrayOf(0x0A, 0x0A))
             if (autoCut) output.write(byteArrayOf(0x1D, 0x56, 0x00))
             output.flush()
           }
@@ -76,7 +76,7 @@ class SaltNPepperPrinterModule(private val context: ReactApplicationContext) : R
   }
 
   @ReactMethod
-  fun printDocument(receipt: String, documentName: String, promise: Promise) {
+  fun printDocument(receipt: String, documentName: String, paperWidth: Int, promise: Promise) {
     val activity = reactApplicationContext.currentActivity ?: return promise.reject("NO_ACTIVITY", "Open the app before printing.")
     activity.runOnUiThread {
       val escaped = receipt.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -85,13 +85,21 @@ class SaltNPepperPrinterModule(private val context: ReactApplicationContext) : R
         override fun onPageFinished(view: WebView, url: String) {
           val manager = activity.getSystemService(Context.PRINT_SERVICE) as PrintManager
           val adapter = if (Build.VERSION.SDK_INT >= 21) view.createPrintDocumentAdapter(documentName) else view.createPrintDocumentAdapter()
-          manager.print("SaltNPepper-$documentName", adapter, PrintAttributes.Builder().build())
+          val widthMils = if (paperWidth == 80) 3150 else 2283
+          val heightMils = (receipt.trimEnd().lineSequence().count() * 125 + 240).coerceAtLeast(1200)
+          val mediaSize = PrintAttributes.MediaSize("THERMAL_$paperWidth", "$paperWidth mm receipt", widthMils, heightMils)
+          val attributes = PrintAttributes.Builder()
+            .setMediaSize(mediaSize)
+            .setMinMargins(PrintAttributes.Margins(80, 80, 80, 80))
+            .setColorMode(PrintAttributes.COLOR_MODE_MONOCHROME)
+            .build()
+          manager.print("SaltNPepper-$documentName", adapter, attributes)
           promise.resolve(null)
         }
       }
       webView.loadDataWithBaseURL(
         null,
-        "<html><head><style>body{font:14px monospace;white-space:pre-wrap;margin:24px}</style></head><body>$escaped</body></html>",
+        "<html><head><style>@page{margin:0}body{font:7pt/1.25 monospace;white-space:pre-wrap;margin:1mm}</style></head><body>$escaped</body></html>",
         "text/html",
         "UTF-8",
         null,

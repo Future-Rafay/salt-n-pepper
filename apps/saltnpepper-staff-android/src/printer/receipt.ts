@@ -29,9 +29,17 @@ function wrap(text: string, width: PaperWidth, indent = "") {
   return (rows.length ? rows : [""]).map((value) => `${indent}${value}`);
 }
 
+function center(text: string, width: PaperWidth) {
+  return wrap(text, width).map((row) => row.padStart(row.length + Math.floor((lineWidth[width] - row.length) / 2)));
+}
+
 function priceLine(label: string, value: string, width: PaperWidth) {
-  const gap = lineWidth[width] - label.length - value.length;
-  return gap > 0 ? `${label}${" ".repeat(gap)}${value}` : [...wrap(label, width), value];
+  const columns = lineWidth[width];
+  const labels = wrap(label, width);
+  const last = labels.pop() || "";
+  return last.length + value.length < columns
+    ? [...labels, `${last}${" ".repeat(columns - last.length - value.length)}${value}`]
+    : [...labels, last, value.padStart(columns)];
 }
 
 export function formatReceipt(order: Order, width: PaperWidth) {
@@ -43,19 +51,22 @@ export function formatReceipt(order: Order, width: PaperWidth) {
     timeZone: "Europe/Zurich",
   }).format(new Date(value));
   const rows = [
-    "SALTNPPEPPER",
-    ...wrap("Allmendstrasse 18, 8154 Oberglatt", width),
-    "+41 76 408 94 30",
-    "info@saltnpepper.ch",
-    "saltnpepper.ch",
+    ...center("SALTNPPEPPER", width),
+    ...center("Allmendstrasse 18", width),
+    ...center("8154 Oberglatt", width),
+    ...center("+41 76 408 94 30", width),
+    ...center("info@saltnpepper.ch", width),
+    ...center("saltnpepper.ch", width),
     "",
     divider,
-    ...wrap(`Order / Bestellung: ${order.orderNumber}`, width),
-    ...wrap(`Type / Art: ${order.fulfillmentType}`, width),
+    ...center(`ORDER / BESTELLUNG ${order.orderNumber}`, width),
+    ...wrap(`Type / Art: ${order.fulfillmentType === "DELIVERY" ? "Delivery / Lieferung" : "Pickup / Abholung"}`, width),
     ...wrap(`Placed / Bestellt: ${dateTime(order.createdAt)}`, width),
     ...(order.scheduledFor ? wrap(`Scheduled / Geplant: ${dateTime(order.scheduledFor)}`, width) : []),
     ...(order.estimatedReadyAt ? wrap(`ETA: ${dateTime(order.estimatedReadyAt)}`, width) : []),
-    ...wrap(`Customer / Kunde: ${order.customerName}`, width),
+    divider,
+    "Customer / Kunde",
+    ...wrap(order.customerName, width),
     ...wrap(`Phone / Telefon: ${order.customerPhone}`, width),
     ...(order.address
       ? wrap(
@@ -65,30 +76,33 @@ export function formatReceipt(order: Order, width: PaperWidth) {
       : []),
     divider,
     ...order.items.flatMap((item) => [
-      ...wrap(`${item.quantity}x ${german ? item.productNameDe : item.productNameEn}`, width),
+      ...priceLine(`${item.quantity}x ${german ? item.productNameDe : item.productNameEn}`, money(item.lineSubtotalRappen), width),
       ...(item.variantNameDe || item.variantNameEn
-        ? wrap((german ? item.variantNameDe : item.variantNameEn) || "", width, "  ")
+        ? wrap(`- ${(german ? item.variantNameDe : item.variantNameEn) || ""}`, width, "  ")
         : []),
       ...item.options.flatMap((option) => wrap(`+ ${german ? option.nameDe : option.nameEn}`, width, "  ")),
-      ...priceLine("", money(item.lineSubtotalRappen), width),
     ]),
     divider,
     ...priceLine("Subtotal / Zwischensumme", money(order.subtotalRappen), width),
     ...(order.discountRappen ? priceLine("Discount / Rabatt", `-${money(order.discountRappen)}`, width) : []),
-    ...(order.deliveryFeeRappen ? priceLine("Delivery / Lieferung", money(order.deliveryFeeRappen), width) : []),
+    ...(order.fulfillmentType === "DELIVERY"
+      ? priceLine("Delivery / Lieferung", order.deliveryFeeRappen ? money(order.deliveryFeeRappen) : "FREE", width)
+      : []),
     ...(order.taxAmountRappen ? priceLine("Tax / MwSt.", money(order.taxAmountRappen), width) : []),
+    divider,
     ...priceLine("TOTAL / SUMME", money(order.totalRappen), width),
+    divider,
     ...wrap(`Payment / Zahlung: ${order.paymentMethod} (${order.payment?.status || "PENDING"})`, width),
     ...(order.note ? ["", ...wrap(`Note / Hinweis: ${order.note}`, width)] : []),
     "",
     divider,
-    "Feedback / Beschwerden",
-    "+41 76 408 94 30",
-    "info@saltnpepper.ch",
+    ...center("Feedback / Beschwerden", width),
+    ...center("+41 76 408 94 30", width),
+    ...center("info@saltnpepper.ch", width),
     "",
-    "Vielen Dank / Thank you!",
+    ...center("Vielen Dank / Thank you!", width),
   ];
-  return `${rows.flat().join("\n")}\n\n\n`;
+  return `${rows.flat().join("\n")}\n`;
 }
 
 export function receiptToEscPosText(order: Order, width: PaperWidth) {

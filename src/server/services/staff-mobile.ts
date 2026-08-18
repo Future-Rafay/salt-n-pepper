@@ -151,7 +151,7 @@ export async function getStaffOrders(status?: string) {
   const orders = await prisma.order.findMany({
     where: { status: parsedStatus ?? { in: activeStatuses } },
     select: staffOrderSelect,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     take: 200,
   });
   return orders.map(staffOrderDto);

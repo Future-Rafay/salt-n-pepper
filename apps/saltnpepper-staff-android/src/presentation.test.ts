@@ -1,4 +1,4 @@
-import { formatChf, groupOrders, localizedSnapshot, totalItemQuantity } from "./presentation.ts";
+import { formatChf, localizedSnapshot, paymentMethodLabel, sortOrdersByLatestActivity, totalItemQuantity } from "./presentation.ts";
 import { formatReceipt } from "./printer/receipt.ts";
 import type { Order } from "./types.ts";
 
@@ -52,16 +52,22 @@ function order(status: Order["status"], createdAt: string, quantity = 1): Order 
   };
 }
 
-const sections = groupOrders([
-  order("PREPARING", "2026-08-12T11:00:00Z"),
-  order("CONFIRMED", "2026-08-12T10:30:00Z", 3),
-  order("CONFIRMED", "2026-08-12T10:00:00Z"),
-], "de");
+const olderCreatedButRecentlyUpdated = order("PREPARING", "2026-08-12T10:00:00Z");
+olderCreatedButRecentlyUpdated.updatedAt = "2026-08-12T12:00:00Z";
+const latest = sortOrdersByLatestActivity([
+  order("CONFIRMED", "2026-08-12T11:00:00Z", 3),
+  olderCreatedButRecentlyUpdated,
+]);
 
-equal(sections.map((section) => section.key).join(","), "new,preparing");
-equal(sections[0].data[0].createdAt, "2026-08-12T10:00:00Z");
-equal(totalItemQuantity(sections[0].data[1]), 3);
+equal(latest[0].status, "PREPARING");
+equal(totalItemQuantity(latest[1]), 3);
+const sameActivityOne = order("CONFIRMED", "2026-08-12T11:00:00Z");
+const sameActivityTwo = order("CONFIRMED", "2026-08-12T11:00:00Z");
+sameActivityOne.orderNumber = "SNP-000001";
+sameActivityTwo.orderNumber = "SNP-000002";
+equal(sortOrdersByLatestActivity([sameActivityOne, sameActivityTwo])[0].orderNumber, "SNP-000002");
 equal(localizedSnapshot("Gericht", "Dish", "en"), "Dish");
+equal(paymentMethodLabel("CASH_ON_DELIVERY", "en"), "Cash on delivery");
 if (!/12\.34/.test(formatChf(1234, "de"))) throw new Error("CHF formatting failed");
 const longOrder = order("CONFIRMED", "2026-08-12T10:00:00Z");
 longOrder.items[0].productNameDe = "Sehr langes Poulet Tikka mit hausgemachter Spezialmarinade";
@@ -71,6 +77,13 @@ for (const width of [58, 80] as const) {
   const columns = width === 58 ? 32 : 48;
   if (receipt.trimEnd().split("\n").some((line) => line.length > columns)) throw new Error(`${width}mm receipt overflowed`);
   if (!receipt.includes("Feedback / Beschwerden") || !receipt.includes("+41 76 408 94 30")) throw new Error("Receipt contact section missing");
-  if (receipt.includes("\x1dV")) throw new Error("Receipt preview must not cut paper");
+  if (receipt.includes("\x1dV")) throw new Error("Receipt text must not cut paper");
+  if (!receipt.endsWith("\n") || receipt.endsWith("\n\n")) throw new Error("Receipt must have exactly one trailing feed");
+  if (receipt.includes("Delivery / Lieferung")) throw new Error("Pickup receipt must omit delivery");
 }
+const freeDelivery = order("CONFIRMED", "2026-08-12T10:00:00Z");
+freeDelivery.fulfillmentType = "DELIVERY";
+if (!/Delivery \/ Lieferung\s+FREE/.test(formatReceipt(freeDelivery, 58))) throw new Error("Free delivery missing");
+freeDelivery.deliveryFeeRappen = 500;
+if (!formatReceipt(freeDelivery, 58).includes("CHF 5.00")) throw new Error("Paid delivery missing");
 console.log("presentation helpers: ok");
