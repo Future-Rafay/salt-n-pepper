@@ -187,7 +187,7 @@ export function MenuClient({ categories, locale }: { categories: MenuCategory[];
       {/* Sticky Category Scroll Nav */}
       <nav
         aria-label={de ? "Menükategorien" : "Menu categories"}
-        className={`${categories.length === 0 ? "hidden" : "flex"} sticky top-[4.5rem] z-30 -mx-4 gap-2 overflow-x-auto border-y border-border/60 bg-surface/95 px-4 py-3 shadow-sm backdrop-blur-md sm:top-[5rem]`}
+        className={`${categories.length === 0 ? "hidden" : "flex"} sticky top-[4.5rem] z-30 -mx-4 gap-2 overflow-x-auto border-y border-border/60 bg-surface/95 px-4 py-3 shadow-sm backdrop-blur-md sm:top-[7.3rem]`}
       >
         {filteredCategories.length > 0
           ? filteredCategories.map((category) => (

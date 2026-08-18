@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import { formatChf } from "@/lib/orders";
+import { formatChf, orderStatusLabel } from "@/lib/orders";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { getCustomerOrders } from "@/server/services/ordering";
 
@@ -77,7 +77,7 @@ export default async function AccountOrdersPage({ params }: { params: Promise<{ 
                     {order.orderNumber}
                   </span>
                   <span className={`rounded-full px-3 py-1 text-[11px] font-bold shadow-sm ${statusColors[order.status] ?? "bg-primary text-white"}`}>
-                    {order.status.replaceAll("_", " ")}
+                    {orderStatusLabel(order.status, locale)}
                   </span>
                 </div>
 
@@ -89,6 +89,14 @@ export default async function AccountOrdersPage({ params }: { params: Promise<{ 
                     {formatChf(order.totalRappen, locale)}
                   </strong>
                 </div>
+
+                {order.activities[0] && <p className="text-xs text-muted">
+                  {order.activities[0].kind === "CASH_PAYMENT_CONFIRMED"
+                    ? de ? "Barzahlung bestätigt" : "Cash payment confirmed"
+                    : orderStatusLabel(order.activities[0].status, locale)}
+                  {" · "}
+                  {new Intl.DateTimeFormat(de ? "de-CH" : "en-CH", { timeZone: "Europe/Zurich", dateStyle: "short", timeStyle: "short" }).format(new Date(order.activities[0].at))}
+                </p>}
 
                 <div className="pt-2 flex items-center justify-between text-xs font-bold text-secondary border-t border-border/40">
                   <span>{de ? "Details & Status verfolgen" : "Track details & status"}</span>

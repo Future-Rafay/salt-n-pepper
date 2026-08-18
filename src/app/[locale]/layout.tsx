@@ -16,7 +16,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   if (!locales.includes(locale as "de" | "en")) notFound();
   
   const [currentUser, publicConfig] = await Promise.all([getCurrentUser(), getPublicConfig()]);
-  const user = currentUser ? { name: currentUser.name, email: currentUser.email, image: currentUser.image, role: currentUser.role } : null;
+  const user = currentUser ? { id: currentUser.id, name: currentUser.name, email: currentUser.email, image: currentUser.image, role: currentUser.role } : null;
 
   return (
     <CartProvider>
