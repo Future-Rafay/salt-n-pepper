@@ -26,7 +26,7 @@ import { CustomerNotifications } from "@/components/site/customer-notifications"
 import { SocialLinks } from "@/components/site/social-links";
 import { useCart } from "@/components/site/cart-context";
 import { restaurantContent } from "@/content/restaurant";
-import { formatChf } from "@/lib/orders";
+import { formatMoney } from "@/lib/orders";
 
 type SiteUser = {
   id: string;
@@ -139,6 +139,7 @@ export function SiteShell({
   const switchLangPath = pathname
     ? pathname.replace(`/${locale}`, `/${other}`)
     : `/${other}`;
+
   const initial =
     user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || "U";
 
@@ -198,10 +199,7 @@ export function SiteShell({
                   className="hidden min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-bold text-foreground hover:bg-surface-warm sm:flex"
                   aria-label={de ? "Switch to English" : "Zu Deutsch wechseln"}
                 >
-                  <Globe2
-                    className="h-4 w-4 text-secondary"
-                    aria-hidden="true"
-                  />
+                  <Globe2 className="h-4 w-4 text-secondary" aria-hidden="true" />
                   {other.toUpperCase()}
                 </Link>
                 <Link
@@ -374,13 +372,12 @@ export function SiteShell({
                   ))}
                   <Link
                     href={switchLangPath}
+                    hrefLang={other}
                     onClick={() => setMobileMenuOpen(false)}
                     className="flex min-h-12 items-center gap-3 rounded-xl px-4 font-bold hover:bg-surface-warm"
+                    aria-label={de ? "Switch to English" : "Zu Deutsch wechseln"}
                   >
-                    <Globe2
-                      className="h-5 w-5 text-secondary"
-                      aria-hidden="true"
-                    />
+                    <Globe2 className="h-5 w-5 text-secondary" aria-hidden="true" />
                     {de ? "English" : "Deutsch"}
                   </Link>
                 </div>
@@ -527,7 +524,7 @@ export function SiteShell({
               </span>
             </span>
             <span className="flex items-center gap-2 font-bold tabular-nums">
-              {formatChf(cartTotalRappen, locale)}
+              {formatMoney(cartTotalRappen, locale)}
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
             </span>
           </button>

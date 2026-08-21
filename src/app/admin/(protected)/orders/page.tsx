@@ -11,7 +11,7 @@ import {
 
 import { AdminPage, Empty, Notice } from "@/components/admin/admin-ui";
 import { Card } from "@/components/ui/card";
-import { formatChf } from "@/lib/orders";
+import { formatMoney } from "@/lib/orders";
 import { getOrderHistory } from "@/server/services/admin";
 
 type OrderStatus =
@@ -133,7 +133,7 @@ export default async function OrdersPage({
                       {order.payment?.status ?? "—"}
                     </td>
                     <td className="px-5 py-4 text-right font-bold text-foreground">
-                      {formatChf(order.totalRappen, "en")}
+                      {formatMoney(order.totalRappen, "en")}
                     </td>
                     <td className="px-5 py-4">
                       <ChevronRight className="h-4 w-4 text-muted opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -157,7 +157,7 @@ export default async function OrdersPage({
                   </div>
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-semibold text-foreground">{order.customerName}</span>
-                    <span className="font-bold text-foreground">{formatChf(order.totalRappen, "en")}</span>
+                    <span className="font-bold text-foreground">{formatMoney(order.totalRappen, "en")}</span>
                   </div>
                   <div className="text-xs text-muted">
                     {new Date(order.createdAt).toLocaleString("en-CH", { timeZone: "Europe/Zurich", dateStyle: "medium", timeStyle: "short" })}

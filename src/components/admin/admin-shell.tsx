@@ -26,6 +26,7 @@ import {
   Zap,
 } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
+import { siteConfig } from "@/config/site";
 
 type AdminUser = {
   id: string;
@@ -150,7 +151,7 @@ export function AdminShell({ user, children, staffApkUrl }: { user: AdminUser; c
           {/* Sidebar Footer Link */}
           <div className="p-4 border-t border-[#E1E3E5]">
             <Link
-              href="/de"
+              href={`/${siteConfig.locale}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-between rounded-lg bg-white p-2.5 text-xs font-bold text-primary shadow-xs border border-border/60 hover:bg-primary/5 transition-colors"
@@ -227,7 +228,7 @@ export function AdminShell({ user, children, staffApkUrl }: { user: AdminUser; c
 
                     <div className="space-y-1">
                       <Link
-                        href="/de"
+                        href={`/${siteConfig.locale}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={() => setUserDropdownOpen(false)}
@@ -298,7 +299,7 @@ export function AdminShell({ user, children, staffApkUrl }: { user: AdminUser; c
                 </nav>
                 <div className="pt-3 border-t border-[#E1E3E5]">
                   <Link
-                    href="/de"
+                    href={`/${siteConfig.locale}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 rounded-lg bg-white py-2 text-xs font-bold text-primary"

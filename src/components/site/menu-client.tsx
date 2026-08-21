@@ -8,7 +8,7 @@ import { useCart } from "@/components/site/cart-context";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { formatChf } from "@/lib/orders";
+import { formatMoney } from "@/lib/orders";
 
 type MenuCategory = {
   id: string;
@@ -365,7 +365,7 @@ function ProductCard({
         {/* Price Tag */}
         <div className="absolute bottom-3 right-3 rounded-xl bg-surface/95 backdrop-blur-md px-3 py-1 font-extrabold text-sm text-primary shadow">
           {hasMultipleVariants && <span className="text-xs font-normal text-muted mr-1">{locale === "de" ? "ab" : "from"}</span>}
-          {formatChf(minPrice, locale)}
+          {formatMoney(minPrice, locale)}
         </div>
       </div>
 
@@ -440,7 +440,7 @@ function ProductCard({
                             />
                             <span>{item.name}</span>
                           </div>
-                          <span className="font-bold">{formatChf(item.priceRappen, locale)}</span>
+                          <span className="font-bold">{formatMoney(item.priceRappen, locale)}</span>
                         </label>
                       ))}
                     </div>
@@ -480,7 +480,7 @@ function ProductCard({
                               </span>
                               {choice.priceDeltaRappen !== 0 && (
                                 <span className="shrink-0 text-xs font-bold text-secondary">
-                                  +{formatChf(choice.priceDeltaRappen, locale)}
+                                  +{formatMoney(choice.priceDeltaRappen, locale)}
                                 </span>
                               )}
                             </label>
@@ -511,7 +511,7 @@ function ProductCard({
                             </div>
                             {choice.priceDeltaRappen !== 0 && (
                               <span className="shrink-0 text-xs font-bold text-secondary">
-                                +{formatChf(choice.priceDeltaRappen, locale)}
+                                +{formatMoney(choice.priceDeltaRappen, locale)}
                               </span>
                             )}
                           </label>
@@ -537,7 +537,7 @@ function ProductCard({
                               />
                               <span>{item.productName} <span className="text-xs text-muted">({item.variantName})</span></span>
                             </span>
-                            <span className="font-bold">+{formatChf(item.priceRappen, locale)}</span>
+                            <span className="font-bold">+{formatMoney(item.priceRappen, locale)}</span>
                           </label>
                         ))}
                       </div>
@@ -549,7 +549,7 @@ function ProductCard({
                     <div>
                       <span className="block text-xs text-muted">{locale === "de" ? "Gesamtpreis" : "Total price"}</span>
                       <strong className="font-display text-2xl font-bold text-primary" aria-live="polite">
-                        {formatChf(totalPrice, locale)}
+                        {formatMoney(totalPrice, locale)}
                       </strong>
                     </div>
                     <DialogClose asChild>

@@ -1,17 +1,19 @@
 import { z } from "zod";
 
+import { siteConfig } from "@/config/site";
 import { zurichDateToUtc } from "@/lib/zurich-time";
+import { postalCodeValueSchema } from "@/server/validators/postal-code";
 
 const optionalText = (max: number) => z.string().trim().max(max).optional().transform((value) => value || null);
 const integer = (minimum = 0) => z.coerce.number().int().min(minimum);
 const optionalInteger = (minimum = 0) => z.union([z.literal(""), z.coerce.number().int().min(minimum)]).transform((value) => value === "" ? null : value);
 const checkbox = z.preprocess((value) => value === "on" || value === "true", z.boolean());
 const databaseId = z.string().trim().min(1).max(191);
-const chfRappen = z.string().trim().regex(/^\d+(?:\.\d{1,2})?$/, "Enter a valid CHF amount.").transform((value) => {
-  const [francs, decimals = ""] = value.split(".");
-  return Number(francs) * 100 + Number(decimals.padEnd(2, "0"));
+const minorUnits = z.string().trim().regex(/^\d+(?:\.\d{1,2})?$/, `Enter a valid ${siteConfig.currency} amount.`).transform((value) => {
+  const [units, decimals = ""] = value.split(".");
+  return Number(units) * 100 + Number(decimals.padEnd(2, "0"));
 });
-const optionalChfRappen = z.union([z.literal(""), chfRappen]).transform((value) => value === "" ? null : value);
+const optionalMinorUnits = z.union([z.literal(""), minorUnits]).transform((value) => value === "" ? null : value);
 const percentBasisPoints = z.string().trim().regex(/^\d+(?:\.\d{1,2})?$/, "Enter a valid percentage.").transform((value) => Math.round(Number(value) * 100));
 const minuteOfDay = z.union([
   z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/).transform((value) => {
@@ -67,7 +69,7 @@ export const variantSchema = z.object({
   productId: databaseId,
   ...bilingualName,
   sku: optionalText(100),
-  priceRappen: chfRappen,
+  priceRappen: minorUnits,
   active: checkbox,
   sortOrder: integer(),
 });
@@ -87,7 +89,7 @@ export const optionChoiceSchema = z.object({
   id: databaseId.optional(),
   optionGroupId: databaseId,
   ...bilingualName,
-  priceDeltaRappen: chfRappen,
+  priceDeltaRappen: minorUnits,
   active: checkbox,
   sortOrder: integer(),
 });
@@ -147,9 +149,9 @@ export const zoneSchema = z.object({
   nameDe: z.string().trim().min(1).max(120),
   nameEn: z.string().trim().min(1).max(120),
   active: checkbox,
-  feeRappen: chfRappen,
-  minimumSubtotalRappen: chfRappen,
-  freeDeliveryThresholdRappen: optionalChfRappen,
+  feeRappen: minorUnits,
+  minimumSubtotalRappen: minorUnits,
+  freeDeliveryThresholdRappen: optionalMinorUnits,
   estimatedMinutes: integer(1).max(1440),
   sortOrder: integer(),
 });
@@ -157,7 +159,7 @@ export const zoneSchema = z.object({
 export const postalCodeSchema = z.object({
   id: databaseId.optional(),
   deliveryZoneId: databaseId,
-  postalCode: z.string().trim().regex(/^\d{4}$/),
+  postalCode: postalCodeValueSchema,
 });
 
 export const siteSettingsSchema = z.object({
@@ -166,7 +168,7 @@ export const siteSettingsSchema = z.object({
   email: z.union([z.literal(""), z.string().trim().email().max(320)]).transform((value) => value || null),
   phone: optionalText(40),
   street: optionalText(200),
-  postalCode: optionalText(16),
+  postalCode: z.union([z.literal(""), postalCodeValueSchema]).transform((value) => value || null),
   city: optionalText(120),
   primaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
   secondaryColor: z.string().regex(/^#[0-9a-fA-F]{6}$/),
@@ -192,7 +194,7 @@ export const promoSchema = z.object({
   code: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/).transform((value) => value.toUpperCase()),
   type: z.enum(["FIXED", "PERCENT"]),
   value: z.string().trim(),
-  minimumSubtotalRappen: chfRappen,
+  minimumSubtotalRappen: minorUnits,
   startsAt: optionalZurichDateTime,
   endsAt: optionalZurichDateTime,
   totalUsageLimit: optionalInteger(1),
@@ -200,13 +202,13 @@ export const promoSchema = z.object({
   active: checkbox,
 }).transform((value) => ({
   ...value,
-  value: value.type === "PERCENT" ? percentBasisPoints.parse(value.value) : chfRappen.parse(value.value),
+  value: value.type === "PERCENT" ? percentBasisPoints.parse(value.value) : minorUnits.parse(value.value),
 })).refine((value) => value.type !== "PERCENT" || value.value <= 10000, { message: "Percentage cannot exceed 100%." })
   .refine((value) => !value.startsAt || !value.endsAt || value.startsAt < value.endsAt, { message: "End must be after start." });
 
 export const refundSchema = z.object({
   orderNumber: z.string().regex(/^SNP-\d{6,}$/i),
-  amountRappen: chfRappen.pipe(z.number().min(1)),
+  amountRappen: minorUnits.pipe(z.number().min(1)),
   reason: z.string().trim().min(3).max(500),
   refundKey: z.string().uuid(),
   cancelOrder: checkbox,

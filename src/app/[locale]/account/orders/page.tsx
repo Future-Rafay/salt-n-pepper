@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { ArrowRight, ShoppingBag } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
-import { formatChf, orderStatusLabel } from "@/lib/orders";
+import { formatMoney, orderStatusLabel } from "@/lib/orders";
 import { getCurrentUser } from "@/server/auth/current-user";
 import { getCustomerOrders } from "@/server/services/ordering";
 
@@ -86,7 +86,7 @@ export default async function AccountOrdersPage({ params }: { params: Promise<{ 
                     {de ? "Gesamtsumme" : "Total amount"}
                   </span>
                   <strong className="font-display text-xl font-bold text-primary">
-                    {formatChf(order.totalRappen, locale)}
+                    {formatMoney(order.totalRappen, locale)}
                   </strong>
                 </div>
 

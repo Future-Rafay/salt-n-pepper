@@ -17,5 +17,7 @@ test("admin form decoding accepts omitted checkboxes and fixture IDs", () => {
   assert.equal(optionGroupSchema.parse({ productId: "mock-product-1", nameDe: "Drink", nameEn: "Drink", minimumSelections: "1", maximumSelections: "1", sortOrder: "0" }).required, true);
   assert.equal(productSuggestionSchema.parse({ productId: "mock-product-1", suggestedVariantId: "mock-variant-2", sortOrder: "2" }).sortOrder, 2);
   assert.equal(promoSchema.parse({ code: "SAVE10", type: "PERCENT", value: "10", minimumSubtotalRappen: "25.00", startsAt: "", endsAt: "", totalUsageLimit: "", perCustomerLimit: "" }).value, 1000);
-  assert.equal(postalCodeSchema.parse({ deliveryZoneId: "mock-zone-1", postalCode: "8304" }).deliveryZoneId, "mock-zone-1");
+  const postalCode = postalCodeSchema.parse({ deliveryZoneId: "mock-zone-1", postalCode: " sw1a   1aa " });
+  assert.equal(postalCode.deliveryZoneId, "mock-zone-1");
+  assert.equal(postalCode.postalCode, "SW1A 1AA");
 });

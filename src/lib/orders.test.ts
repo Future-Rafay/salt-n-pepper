@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { allocateDiscount, assertOptionCount, formatOrderNumber, nextOrderStatus, orderStatusLabel, promoDiscount, publicOrderAddress } from "@/lib/orders";
+import { siteConfig } from "@/config/site";
+import { allocateDiscount, assertOptionCount, formatMoney, formatOrderNumber, nextOrderStatus, orderStatusLabel, promoDiscount, publicOrderAddress } from "@/lib/orders";
 import { zurichDateToUtc, zurichParts } from "@/lib/zurich-time";
 
 test("order money and lifecycle rules stay server-shaped", () => {
   assert.equal(formatOrderNumber(42), "SNP-000042");
+  assert.equal(formatMoney(1_250, "en"), new Intl.NumberFormat("en-CH", { style: "currency", currency: siteConfig.currency }).format(12.5));
   assert.equal(promoDiscount(5_000, { type: "PERCENT", value: 1_000, minimumSubtotalRappen: 2_500 }), 500);
   assert.equal(promoDiscount(300, { type: "FIXED", value: 500, minimumSubtotalRappen: 0 }), 300);
   assert.equal(nextOrderStatus("PREPARING", "PICKUP"), "READY_FOR_PICKUP");

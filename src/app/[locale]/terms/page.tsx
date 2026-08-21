@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { siteConfig } from "@/config/site";
 
 export default async function TermsPage({ params }: { params: Promise<{ locale: string }> }) {
   const de = (await params).locale !== "en";
@@ -20,8 +21,8 @@ export default async function TermsPage({ params }: { params: Promise<{ locale: 
         </p>
         <p className="text-sm text-muted leading-relaxed">
           {de
-            ? "Alle Bestellungen bei SaltNPepper unterliegen den Schweizer Bestimmungen für Gastronomie und Online-Handel. Alle Preise verstehen sich in CHF inklusive aller gesetzlichen Abgaben."
-            : "All orders placed with SaltNPepper are subject to Swiss gastronomy and e-commerce regulations. All prices are stated in CHF inclusive of applicable duties."}
+            ? `Alle Bestellungen bei SaltNPepper unterliegen den Schweizer Bestimmungen für Gastronomie und Online-Handel. Alle Preise verstehen sich in ${siteConfig.currency} inklusive aller gesetzlichen Abgaben.`
+            : `All orders placed with SaltNPepper are subject to Swiss gastronomy and e-commerce regulations. All prices are stated in ${siteConfig.currency} inclusive of applicable duties.`}
         </p>
         <p className="text-xs text-muted/80 pt-2 border-t border-border/60">
           {de

@@ -225,7 +225,7 @@ model DeliveryZone {
 model DeliveryZonePostalCode {
   id             String       @id @default(cuid())
   deliveryZoneId String
-  postalCode     String       @unique(map: "DeliveryZonePostalCode_postalCode_key") @db.Char(4)
+  postalCode     String       @unique(map: "DeliveryZonePostalCode_postalCode_key") @db.VarChar(16)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   deliveryZone   DeliveryZone @relation(fields: [deliveryZoneId], references: [id], onDelete: Cascade, map: "DeliveryZonePostalCode_deliveryZoneId_fkey")

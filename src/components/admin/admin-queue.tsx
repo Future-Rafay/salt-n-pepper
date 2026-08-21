@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EtaEditor } from "@/components/admin/eta-editor";
-import { formatChf } from "@/lib/orders";
+import { formatMoney } from "@/lib/orders";
 
 type AdminOrder = {
   orderNumber: string;
@@ -132,7 +132,7 @@ export function AdminQueue({ orders }: { orders: AdminOrder[] }) {
 
                 <div className="flex items-center justify-between text-xs font-semibold text-muted bg-[#F6F6F7] p-2.5 rounded-lg">
                   <span>{order.fulfillmentType.replaceAll("_", " ")}</span>
-                  <span className="font-bold text-primary">{formatChf(order.totalRappen, "en")}</span>
+                  <span className="font-bold text-primary">{formatMoney(order.totalRappen, "en")}</span>
                   <span className="font-bold uppercase text-[10px] bg-white px-2 py-0.5 rounded border border-border">
                     {order.paymentStatus}
                   </span>

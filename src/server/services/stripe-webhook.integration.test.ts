@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type Stripe from "stripe";
 
+import { siteConfig } from "@/config/site";
 import { formatOrderNumber } from "@/lib/orders";
 import { createOrderSchema, quoteSchema } from "@/server/validators/order";
 
@@ -18,7 +19,7 @@ test("checkout schemas require delivery details and compatible payment", () => {
     scheduledFor: null,
     postcode: "8154",
     checkoutKey: crypto.randomUUID(),
-    locale: "en",
+    locale: siteConfig.locale,
     customerName: "Test Customer",
     customerEmail: "test@example.com",
     customerPhone: "123456",
@@ -71,14 +72,14 @@ test("Stripe events are replayable, delayed payments settle, failures release sl
     orderIds.push(order.id);
     return order;
   };
-  const checkoutEvent = (id: string, type: Stripe.Event.Type, sessionId: string, orderId: bigint, paymentStatus: "paid" | "unpaid") => ({
+  const checkoutEvent = (id: string, type: Stripe.Event.Type, sessionId: string, orderId: bigint, paymentStatus: "paid" | "unpaid", currency = siteConfig.currency.toLowerCase()) => ({
     id,
     type,
     data: { object: {
       id: sessionId,
       object: "checkout.session",
       amount_total: 1000,
-      currency: "chf",
+      currency,
       metadata: { orderId: orderId.toString(), orderNumber: formatOrderNumber(orderId) },
       payment_intent: paymentStatus === "paid" ? `pi_${suffix}` : null,
       payment_status: paymentStatus,
@@ -93,6 +94,12 @@ test("Stripe events are replayable, delayed payments settle, failures release sl
     await processStripeEvent(replay);
     await processStripeEvent(replay);
     assert.equal(await prisma.stripeWebhookEvent.count({ where: { eventId: replayId } }), 1);
+
+    const wrongCurrencyOrder = await createStripeOrder(`cs_currency_${suffix}`);
+    const wrongCurrencyId = `evt_currency_${suffix}`;
+    eventIds.push(wrongCurrencyId);
+    await assert.rejects(() => processStripeEvent(checkoutEvent(wrongCurrencyId, "checkout.session.completed", `cs_currency_${suffix}`, wrongCurrencyOrder.id, "paid", "xxx")));
+    assert.equal((await prisma.order.findUniqueOrThrow({ where: { id: wrongCurrencyOrder.id } })).status, "PAYMENT_PENDING");
 
     const paidOrder = await createStripeOrder(`cs_paid_${suffix}`);
     const pendingId = `evt_pending_${suffix}`;

@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { formatChf } from "@/lib/orders";
+import { formatMoney } from "@/lib/orders";
 
 type Quote = {
   subtotalRappen: number;
@@ -174,8 +174,8 @@ export function CheckoutForm({
   const fieldMessage = (field: string) => {
     const labels: Record<string, { de: string; en: string }> = {
       postalCode: {
-        de: "Bitte geben Sie eine gültige 4-stellige Schweizer Postleitzahl ein.",
-        en: "Enter a valid 4-digit Swiss postcode.",
+        de: "Bitte geben Sie eine gültige Postleitzahl ein.",
+        en: "Enter a valid postal code.",
       },
       customerName: {
         de: "Bitte geben Sie Ihren Namen ein.",
@@ -268,14 +268,6 @@ export function CheckoutForm({
   async function applyPromo(form: HTMLFormElement) {
     setError("");
     setFieldErrors({});
-    if (fulfillmentType === "DELIVERY") {
-      const postcode = form.elements.namedItem("postalCode") as HTMLInputElement;
-      if (!/^\d{4}$/.test(postcode.value.trim())) {
-        setFieldErrors({ postalCode: fieldMessage("postalCode") });
-        focusField("postalCode");
-        return;
-      }
-    }
     setBusy(true);
     try {
       await requestQuote(form);
@@ -653,9 +645,8 @@ export function CheckoutForm({
               />
               <Field
                 id="postalCode"
-                label={de ? "Postleitzahl (CH)" : "Postcode (CH)"}
-                inputMode="numeric"
-                pattern="[0-9]{4}"
+                label={de ? "Postleitzahl" : "Postal code"}
+                maxLength={16}
                 autoComplete="postal-code"
                 error={fieldErrors.postalCode}
               />
@@ -798,7 +789,7 @@ export function CheckoutForm({
                   )}
                 </div>
                 <strong className="shrink-0 font-bold text-primary">
-                  {formatChf(item.unitPriceRappen * item.quantity, locale)}
+                  {formatMoney(item.unitPriceRappen * item.quantity, locale)}
                 </strong>
               </li>
             ))}
@@ -851,13 +842,13 @@ export function CheckoutForm({
               <div className="flex justify-between text-muted">
                 <dt>{de ? "Zwischensumme" : "Subtotal"}</dt>
                 <dd className="font-semibold text-foreground">
-                  {formatChf(quote.subtotalRappen, locale)}
+                  {formatMoney(quote.subtotalRappen, locale)}
                 </dd>
               </div>
               {quote.discountRappen > 0 && (
                 <div className="flex justify-between text-success font-semibold">
                   <dt>{de ? "Rabatt" : "Discount"}</dt>
-                  <dd>- {formatChf(quote.discountRappen, locale)}</dd>
+                  <dd>- {formatMoney(quote.discountRappen, locale)}</dd>
                 </div>
               )}
               {fulfillmentType === "DELIVERY" && (
@@ -865,7 +856,7 @@ export function CheckoutForm({
                   <dt>{de ? "Liefergebühr" : "Delivery fee"}</dt>
                   <dd className="font-semibold text-foreground">
                     {quote.deliveryFeeRappen
-                      ? formatChf(quote.deliveryFeeRappen, locale)
+                      ? formatMoney(quote.deliveryFeeRappen, locale)
                       : de
                         ? "Kostenlos"
                         : "Free"}
@@ -908,14 +899,14 @@ export function CheckoutForm({
                 quote.subtotalRappen < quote.promoMinimumSubtotalRappen && (
                   <p className="rounded-lg bg-amber-50 p-2 text-xs text-amber-900">
                     {de
-                      ? `Noch ${formatChf(quote.promoMinimumSubtotalRappen - quote.subtotalRappen, locale)} bis zum Mindestbetrag.`
-                      : `Add ${formatChf(quote.promoMinimumSubtotalRappen - quote.subtotalRappen, locale)} to reach the coupon minimum.`}
+                      ? `Noch ${formatMoney(quote.promoMinimumSubtotalRappen - quote.subtotalRappen, locale)} bis zum Mindestbetrag.`
+                      : `Add ${formatMoney(quote.promoMinimumSubtotalRappen - quote.subtotalRappen, locale)} to reach the coupon minimum.`}
                   </p>
                 )}
               <div className="flex justify-between border-t border-border/80 pt-3 text-xl font-bold text-primary">
                 <dt>Total</dt>
                 <dd className="font-display">
-                  {formatChf(quote.totalRappen, locale)}
+                  {formatMoney(quote.totalRappen, locale)}
                 </dd>
               </div>
             </dl>

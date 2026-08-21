@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 
+import { siteConfig } from "@/config/site";
 import { Prisma } from "@/generated/prisma/client";
 import type { FulfillmentType, Locale, OrderStatus } from "@/generated/prisma/enums";
 import { getStripeEnv } from "@/config/env";
@@ -227,7 +228,7 @@ function assertStripeSession(order: StripeOrder, session: Stripe.Checkout.Sessio
   if (
     order.payment?.provider !== "STRIPE"
     || order.payment.stripeCheckoutSessionId !== session.id
-    || session.currency !== "chf"
+    || session.currency !== siteConfig.currency.toLowerCase()
     || session.amount_total !== order.payment.amountRappen
     || session.metadata?.orderNumber !== formatOrderNumber(order.id)
   ) throw new OrderError("STRIPE_EVENT_INVALID");
@@ -362,13 +363,13 @@ export async function createOrder(input: CreateOrderInput, userId?: string) {
         const options = item.options.map((option) => input.locale === "de" ? option.nameDeSnapshot : option.nameEnSnapshot);
         const imageUrl = resolvePublicImageUrl(item.product?.imageKey);
         const absoluteImageUrl = imageUrl && (imageUrl.startsWith("http") ? imageUrl : new URL(imageUrl, stripeEnv!.APP_URL).toString());
-        return { quantity: 1, price_data: { currency: "chf", unit_amount: discountedTotals[index], product_data: {
+        return { quantity: 1, price_data: { currency: siteConfig.currency.toLowerCase(), unit_amount: discountedTotals[index], product_data: {
           name: `${item.quantity}× ${input.locale === "de" ? item.productNameDeSnapshot : item.productNameEnSnapshot}`,
           description: [input.locale === "de" ? item.variantNameDeSnapshot : item.variantNameEnSnapshot, ...options].filter(Boolean).join(" · ") || undefined,
           images: absoluteImageUrl ? [absoluteImageUrl] : undefined,
         } } };
       });
-      if (order.deliveryFeeRappen > 0) lineItems.push({ quantity: 1, price_data: { currency: "chf", unit_amount: order.deliveryFeeRappen, product_data: { name: input.locale === "de" ? "Liefergebühr" : "Delivery fee" } } });
+      if (order.deliveryFeeRappen > 0) lineItems.push({ quantity: 1, price_data: { currency: siteConfig.currency.toLowerCase(), unit_amount: order.deliveryFeeRappen, product_data: { name: input.locale === "de" ? "Liefergebühr" : "Delivery fee" } } });
       const session = await getStripe().checkout.sessions.create({
         mode: "payment",
         customer_email: order.customerEmail,

@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { siteConfig } from "@/config/site";
 import type { FulfillmentType, OrderStatus, PromoType } from "@/generated/prisma/enums";
 
 const orderStatusLabels: Record<OrderStatus, { de: string; en: string }> = {
@@ -25,19 +26,19 @@ export function parseOrderNumber(value: string) {
   return match ? BigInt(match[1]) : null;
 }
 
-export function formatChf(rappen: number, locale: "de" | "en" = "de") {
+export function formatMoney(minorUnits: number, locale: "de" | "en" = siteConfig.locale) {
   return new Intl.NumberFormat(locale === "de" ? "de-CH" : "en-CH", {
     style: "currency",
-    currency: "CHF",
-  }).format(rappen / 100);
+    currency: siteConfig.currency,
+  }).format(minorUnits / 100);
 }
 
 export function orderStatusLabel(status: OrderStatus, locale: "de" | "en") {
   return orderStatusLabels[status][locale];
 }
 
-export function formatChfInput(rappen: number) {
-  return (rappen / 100).toFixed(2);
+export function formatMoneyInput(minorUnits: number) {
+  return (minorUnits / 100).toFixed(2);
 }
 
 export function formatMinuteOfDay(minute: number) {

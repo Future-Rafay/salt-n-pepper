@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 
+import { locales } from "@/i18n/config";
+
 const pages = [
   "",
   "/menu",
@@ -13,7 +15,7 @@ const pages = [
 export default function sitemap(): MetadataRoute.Sitemap {
   const origin = process.env.APP_URL ?? "http://localhost:3000";
   return pages.flatMap((path) =>
-    (["de", "en"] as const).map((locale) => ({
+    locales.map((locale) => ({
       url: `${origin}/${locale}${path}`,
       changeFrequency:
         path === "/menu" || path === "/blog"
