@@ -21,13 +21,15 @@
 7. Added the contact-page Google Map, database-backed hours and delivery announcement, Foodeez social destinations, site-wide WhatsApp access, and localized SweetNSavour-powered blog pages.
 8. Added admin-configurable per-product suggested variants and customer option selection, with suggestions added as independent cart/order lines and server-authoritative live pricing and availability.
 9. Hardened checkout validation and Stripe's immediate/delayed webhook lifecycle, added authorized pending-payment reconciliation on order tracking, enforced refund-before-cancel for paid Stripe orders, exposed exact order activities to customer history and notifications, and changed the staff queue to latest-activity ordering with compact, system-inset-safe screens.
+10. Added reusable homepage section templates, a clearly labelled Instagram presentation gallery linked to the approved Foodeez profile, bilingual public routes with a code-configured default locale, one code-configured currency, and string-safe international postal-code validation with exact delivery-zone matching.
 
 ## Production blockers
 
 - Replace temporary editorial Unsplash photography with approved restaurant photography.
-- Export approved raster/SVG wordmark, monogram, favicon, social image, and Android launcher icons. The live product currently uses the approved text-only typographic treatment because image-generation quota was unavailable.
+- Export approved raster/SVG wordmark, monogram, and Android launcher icons. The website favicon and social preview now use the generated chili mark pending final owner approval.
 - Approve or replace the provisional menu, prices, allergens, opening hours, delivery/pickup rules, and representative product photography.
-- Confirm whether the intentionally shared Foodeez Facebook/Instagram destinations should remain or be replaced by SaltNPepper-owned profiles.
+- Confirm whether the intentionally shared Foodeez Facebook destination should remain or be replaced by a SaltNPepper-owned profile. The Foodeez Instagram profile is approved for the current website link.
+- Replace the mock Instagram gallery with the approved SaltNPepper Professional account feed only after Meta credentials and real media are supplied.
 - Add final legal copy, VAT status, and payment credentials.
 - Publish a signed Android APK only after hardware/printer acceptance.
 - Do not change DNS until the owner gives written launch approval.

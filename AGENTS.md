@@ -4,7 +4,7 @@
 
 This is the standalone SaltNPepper restaurant website, admin panel, backend API, and React Native staff companion app. Read `PLAN.md` before architecture, schema, route, payment, or workflow changes.
 
-- Public routes are German and English under `/de` and `/en`; `/` redirects to `/de`.
+- Public routes are German and English under `/de` and `/en`; `/` redirects to the default locale configured in `src/config/site.ts`.
 - Admin stays under `/admin` in the same Next.js app.
 - The Android project lives at `apps/saltnpepper-staff-android` and uses only authenticated HTTPS APIs. It never connects to MySQL.
 - This is a single-restaurant system. Do not add tenant or organization abstractions.
@@ -34,9 +34,12 @@ This is the standalone SaltNPepper restaurant website, admin panel, backend API,
 - Public web and versioned mobile routes must call shared server services instead of duplicating pricing, authorization, availability, payment, or transition rules.
 - Customer notification/history surfaces consume the explicit activities returned by the ordering DTO; do not infer status events from `Order.updatedAt`.
 - Staff order queues sort by `Order.updatedAt` latest-first. Payment mutations that count as order activity must touch the order in the same transaction.
+- Checkout validates delivery postcode/address details before applying a promo; preserve structured field errors through the web form instead of collapsing them into generic alerts.
+- Customer order tracking may reconcile a saved pending Stripe Checkout Session, but only through the same idempotent server finalizer used by signature-verified webhooks.
 - Product suggestions pin one target `ProductVariant`, are configured in admin, and reach checkout as ordinary independent cart/order lines; public pricing and orderability remain server-authoritative.
 - Validate trust boundaries with shared schemas and return explicit DTOs.
-- Use integer CHF rappen, UTC storage, and `Europe/Zurich` display/calculation.
+- Use integer two-decimal minor units, the single active currency in `src/config/site.ts`, UTC storage, and `Europe/Zurich` display/calculation. Legacy `*Rappen` field names remain for compatibility.
+- Postal codes remain normalized strings with exact delivery-zone matching; preserve leading zeroes and alphanumeric formats.
 - Public order labels use `SNP-000001`; raw IDs remain internal.
 
 ## Database and integrations
@@ -46,6 +49,7 @@ This is the standalone SaltNPepper restaurant website, admin panel, backend API,
 - Never edit a migration already deployed outside disposable local development; create a forward migration.
 - Keep network calls outside long database transactions.
 - Stripe webhooks are authoritative and signature verified. Paid checkout finalization handles both immediate `checkout.session.completed` and delayed `checkout.session.async_payment_succeeded` events through the same idempotent service path; the authorized order tracker may reconcile a still-pending saved Checkout Session through that same finalizer. Stripe identifiers belong on `Payment`, and refund actor/provider data belongs on `Refund`, not `Order`. S3 writes are server-authorized. Secrets remain server-only.
+- A paid Stripe order must be fully refunded through the existing refund-and-cancel flow before it can be cancelled; never expose direct cancellation for that state.
 
 ## UI and safety
 
@@ -53,8 +57,10 @@ This is the standalone SaltNPepper restaurant website, admin panel, backend API,
 - Single-choice option groups use labelled native radio inputs; multi-choice groups use bounded checkboxes.
 - Target WCAG 2.2 AA: semantic HTML, labels/errors, keyboard support, visible focus, contrast, reduced motion, and 44px touch targets.
 - Keep return, reject, cancel, refund, delete, clear, logout, and other dangerous actions visually and spatially separate from routine actions.
-- Dangerous actions require confirmation and a reason when applicable. Refund confirmation shows the exact CHF amount.
+- Dangerous actions require confirmation and a reason when applicable. Refund confirmation shows the exact configured-currency amount.
 - Use Lucide icons on web; do not use emoji as UI icons.
+- Android order details render inside the inset-safe app root, not a separate modal window. Keep its only body scrollable and leave final actions clear of system navigation controls.
+- Android receipts use the selected 58 mm or 80 mm setting end-to-end. Keep the formatter width-aware and compact, pass the width to the native print bridge, and do not reintroduce an in-app receipt preview.
 
 ## Verification
 

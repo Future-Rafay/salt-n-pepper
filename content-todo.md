@@ -7,8 +7,10 @@
 - [ ] Confirm the provisional daily 11:00–22:00 pickup/delivery hours and add any holiday exceptions.
 - [ ] Confirm delivery to postcode 8154 with CHF 5 fee, CHF 30 minimum, and free delivery from CHF 60.
 - [ ] Confirm VAT status and final privacy/terms text with the operator.
-- [ ] Confirm the intentionally shared Foodeez Facebook and Instagram links or supply SaltNPepper-owned profiles.
-- [ ] Approve/export the text wordmark, SNP monogram, favicon, social image, and Android launcher icons. Nano Banana generation was blocked by provider quota, so the UI currently renders the text-only wordmark natively.
+- [ ] Confirm the intentionally shared Foodeez Facebook link or supply a SaltNPepper-owned profile. The Foodeez Instagram link is approved for the current website.
+- [ ] Replace the clearly labelled mock Instagram gallery with an approved SaltNPepper Professional account feed and real media before presenting it as live Instagram content.
+- [ ] Approve/export the final text wordmark, SNP monogram, and Android launcher icons.
+- [ ] Approve or replace the generated chili favicon and social preview image before launch.
 - [ ] Replace all temporary editorial imagery before presenting it as SaltNPepper food or premises.
 - [ ] Supply production S3, Resend, Stripe, Google OAuth, Vercel, signing, and printer details.
 
